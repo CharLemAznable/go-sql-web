@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/bingoohuang/gou"
 	_ "github.com/go-sql-driver/mysql"
+	_ "gopkg.in/goracle.v2"
 )
 
 func selectDb(tid string) (string, string, error) {

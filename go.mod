@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.6.2
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	google.golang.org/appengine v1.3.0 // indirect
+	gopkg.in/goracle.v2 v2.16.3
 )
 
 replace github.com/tdewolff/parse => github.com/tdewolff/parse v0.0.0-20181024085210-fced451e0bed

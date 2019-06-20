@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	gou "github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gou"
 	"github.com/xwb1989/sqlparser"
 )
 
-func parseSql(querySql, dbDataSource string) (string, []string) {
+func parseSql(querySql, dbDriverName, dbDataSource string) (string, []string) {
 	var tableName string
 	var primaryKeys []string
 	firstWord := strings.ToUpper(gou.FirstWord(querySql))
@@ -18,7 +18,7 @@ func parseSql(querySql, dbDataSource string) (string, []string) {
 		if err == nil {
 			tableName = findSingleTableName(sqlParseResult)
 			if tableName != "" {
-				primaryKeys = findTablePrimaryKeys(tableName, dbDataSource)
+				primaryKeys = findTablePrimaryKeys(tableName, dbDriverName, dbDataSource)
 			}
 		}
 	default:
@@ -50,9 +50,11 @@ func findPrimaryKeysIndex(tableName string, primaryKeys, headers []string) []int
 	return primaryKeysIndex
 }
 
-func findTablePrimaryKeys(tableName string, dbDataSource string) []string {
+func findTablePrimaryKeys(tableName string, dbDriverName, dbDataSource string) []string {
 	primaryKeys := make([]string, 0)
-	_, data, _, _, err, _ := executeQuery("desc "+tableName, dbDataSource, 0)
+	_, data, _, _, err, _ := executeQuery(
+		SqlOf(dbDriverName).DescribeTable(tableName),
+		dbDriverName, dbDataSource, 0)
 	if err != nil {
 		return primaryKeys
 	}

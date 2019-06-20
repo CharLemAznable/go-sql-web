@@ -21,7 +21,8 @@
     $.downloadColumn = function (classifier, tid, tableName, columnName, resultId, result, $cell) {
         var cells = $cell.parent('tr').find('td.dataCell')
         let sql = "select " + columnName + ' from  ' + tableName
-            + createWherePart4Download(resultId, result, cells, columnName) + ' limit 1'
+            + createWherePart4Download(resultId, result, cells, columnName)
+        if ($.currentDriverName === "mysql") sql = sql + ' limit 1'
 
         var fileNameMaybe = findFileName(resultId, result, cells, columnName)
         let fileName = window.prompt("please input download file name", fileNameMaybe)
@@ -58,7 +59,9 @@
 
                 var pkName = $(headRow.get(ki + 1)).text()
                 var $cell = $(cells.get(ki))
-                sql += $.wrapWhereCondition(pkName, $.cellOldValue($cell))
+                let oldValue = $.cellOldValue($cell);
+                let dataType = $.cellDataType($cell);
+                sql += $.wrapWhereCondition(pkName, oldValue, dataType)
             }
             return sql
         }
@@ -70,8 +73,10 @@
 
                 var fieldName = $(headRow.get(jndex + 1)).text()
                 if (fieldName !== columnName) {
-                    var whereValue = $.cellOldValue($(cell))
-                    wherePart += $.wrapWhereCondition(fieldName, whereValue)
+                    let $cell = $(cell);
+                    let whereValue = $.cellOldValue($cell);
+                    let dataType = $.cellDataType($cell);
+                    wherePart += $.wrapWhereCondition(fieldName, whereValue, dataType)
                 }
             }
         })
@@ -79,7 +84,25 @@
         return ' where ' + wherePart
     }
 
-    $.wrapWhereCondition = function (fieldName, fieldValue) {
-        return $.wrapFieldName(fieldName) + ("(null)" === fieldValue ? ' is null' : (' = \'' + $.escapeSqlValue(fieldValue) + '\''))
+    $.wrapWhereCondition = function (fieldName, fieldValue, dataType) {
+        var condition = $.wrapFieldName(fieldName)
+        if ("(null)" === fieldValue) {
+            condition += ' is null'
+        } else if ($.currentDriverName === "goracle") {
+            if ("" === fieldValue) {
+                condition += ' is null'
+            } else if (dataType === "DATE") {
+                condition += ' = to_date(\'' + $.formatOracleDateTimeValue(
+                    fieldValue, 'YYYY-MM-DD HH:mm:ss')+ '\',\'YYYY-MM-DD HH24:MI:SS\')'
+            } else if (dataType.startsWith("TIMESTAMP")) {
+                condition += ' = to_timestamp(\'' + $.formatOracleDateTimeValue(
+                    fieldValue, 'YYYY-MM-DD HH:mm:ss.SSS') + '\',\'YYYY-MM-DD HH24:MI:SS.FF3\')'
+            } else {
+                condition += ' = \'' + $.escapeSqlValue(fieldValue) + '\''
+            }
+        } else {
+            condition += ' = \'' + $.escapeSqlValue(fieldValue) + '\''
+        }
+        return condition
     }
 })()

@@ -132,9 +132,9 @@
         if (!result.Headers) {
             result.Headers = []
         }
-        var showFullColumns = sql.startsWith("show full columns from ")
+        var showFullColumns = sql.startsWith("processShowColumn ")
         if (showFullColumns) {
-            result.TableName = sql.substring("show full columns from ".length)
+            result.TableName = sql.substring("processShowColumn ".length)
         }
         var rowUpdateReady = result.TableName && result.TableName != ""
         var resultId = oldResultId !== null && oldResultId >= 0 ? oldResultId : ++queryResultId

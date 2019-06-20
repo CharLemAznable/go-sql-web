@@ -82,7 +82,7 @@
     <div class="tablesRightBox" style="display: none;" v-show="isShow">
         <input class="searchTableNames" placeholder="Type to search tables" v-model="tableNameFilterText">
         <input type="checkbox" v-model="selectMode">
-        <span title="refresh tables" style="cursor: pointer" class="context-menu-icon-reload context-menu-icons" @click="initTable"></span>
+        <span title="refresh tables" style="cursor: pointer" class="context-menu-icon-reload context-menu-icons" @click="reInitTable"></span>
         <div>
             <span class="tableModifyBtn" @click="truncateTables" v-if="selectMode">Truncate</span>
             <span class="tableModifyBtn" @click="renameTables" v-if="selectMode">Rename</span>
@@ -112,10 +112,13 @@
 <script src="${contextPath}/static/jquery-confirm.min.js"></script>
 <script src="${contextPath}/static/select2.min.js"></script>
 <script src="${contextPath}/static/jquery.pinyin.js"></script>
+<script src="${contextPath}/static/dayjs.min.js"></script>
+<script src="${contextPath}/static/utc.js"></script>
 <script>
     const contextPath = '${contextPath}';
     const multiTenants = '${multiTenants}';
     let defaultTenant = '${defaultTenant}' || '%';
+    dayjs.extend(dayjs_plugin_utc);
 
 
     /*.SCRIPT*/

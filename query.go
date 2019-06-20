@@ -12,7 +12,7 @@ import (
 	"time"
 	"unicode"
 
-	gou "github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gou"
 )
 
 type QueryResult struct {
@@ -22,6 +22,7 @@ type QueryResult struct {
 	Error            string
 	ExecutionTime    string
 	CostTime         string
+	DriverName       string
 	DatabaseName     string
 	TableName        string
 	PrimaryKeysIndex []int
@@ -34,7 +35,7 @@ func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
 	tid := strings.TrimSpace(req.FormValue("tid"))
 	columnName := strings.TrimSpace(req.FormValue("columnName"))
 
-	dbDataSource, databaseName, err := selectDb(tid)
+	dbDriverName, dbDataSource, databaseName, err := selectDb(tid)
 	if err != nil {
 		http.Error(w, err.Error(), 405)
 		return
@@ -44,7 +45,7 @@ func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
 		"WHERE TABLE_SCHEMA NOT IN('information_schema','mysql','performance_schema') " +
 		"AND COLUMN_NAME = '" + columnName + "'"
 
-	_, rows, executionTime, costTime, err, msg := processSql(tid, querySql, dbDataSource, 0)
+	_, rows, executionTime, costTime, err, msg := processSql(tid, querySql, dbDriverName, dbDataSource, 0)
 
 	queryResult := struct {
 		Rows          [][]string
@@ -62,7 +63,7 @@ func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
 		Msg:           msg,
 	}
 
-	json.NewEncoder(w).Encode(queryResult)
+	_ = json.NewEncoder(w).Encode(queryResult)
 }
 
 func multipleTenantsQuery(w http.ResponseWriter, req *http.Request) {
@@ -72,8 +73,8 @@ func multipleTenantsQuery(w http.ResponseWriter, req *http.Request) {
 	})
 
 	sqls := gou.SplitSqls(sqlString, ';')
-	for _, sql := range sqls {
-		if gou.IsQuerySql(sql) {
+	for _, subSql := range sqls {
+		if gou.IsQuerySql(subSql) {
 			continue
 		}
 		if !writeAuthOk(req) {
@@ -98,11 +99,11 @@ func multipleTenantsQuery(w http.ResponseWriter, req *http.Request) {
 		results[i] = <-resultChan
 	}
 
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string) {
-	dbDataSource, databaseName, err := selectDbByTid(tid, appConfig.DataSource)
+	dbDriverName, dbDataSource, databaseName, err := selectDbByTid(tid, appConfig.DriverName, appConfig.DataSource)
 	if err != nil {
 		resultChan <- &QueryResult{
 			Error: gou.Error(err),
@@ -111,17 +112,18 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 		return
 	}
 
-	db, err := sql.Open("mysql", dbDataSource)
+	db, err := sql.Open(dbDriverName, dbDataSource)
 	if err != nil {
 		resultChan <- &QueryResult{
 			Error:        gou.Error(err),
+			DriverName:   dbDriverName,
 			DatabaseName: databaseName,
 			Tid:          tid,
 		}
 
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	executionTime := time.Now().Format("2006-01-02 15:04:05.000")
 
@@ -140,6 +142,7 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 			Error:         gou.Error(sqlResult.Error),
 			ExecutionTime: executionTime,
 			CostTime:      sqlResult.CostTime.String(),
+			DriverName:    dbDriverName,
 			DatabaseName:  databaseName,
 			Tid:           tid,
 			Msg:           msg,
@@ -162,6 +165,7 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 	if querySqlMixed {
 		resultChan <- &QueryResult{
 			Error:        "select sql should be executed one by one in single time",
+			DriverName:   dbDriverName,
 			DatabaseName: databaseName,
 			Tid:          tid,
 		}
@@ -186,6 +190,7 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 	resultChan <- &QueryResult{
 		ExecutionTime: executionTime,
 		CostTime:      time.Since(start).String(),
+		DriverName:    dbDriverName,
 		DatabaseName:  databaseName,
 		Msg:           msg,
 		Tid:           tid,
@@ -199,18 +204,18 @@ func downloadColumn(w http.ResponseWriter, req *http.Request) {
 	fileName := strings.TrimSpace(req.FormValue("fileName"))
 	tid := strings.TrimSpace(req.FormValue("tid"))
 
-	ds, _, err := selectDb(tid)
+	dn, ds, _, err := selectDb(tid)
 	if err != nil {
 		http.Error(w, err.Error(), 405)
 		return
 	}
 
-	db, err := sql.Open("mysql", ds)
+	db, err := sql.Open(dn, ds)
 	if err != nil {
 		http.Error(w, err.Error(), 405)
 		return
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows, err := db.Query(querySql)
 	if err != nil {
@@ -264,7 +269,7 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 		return unicode.IsSpace(r) || r == ';'
 	})
 
-	if !gou.IsQuerySql(querySql) && !writeAuthOk(req) {
+	if !IsCodedSql(querySql) && !gou.IsQuerySql(querySql) && !writeAuthOk(req) {
 		http.Error(w, "write auth required", 405)
 		return
 	}
@@ -281,14 +286,19 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 		maxRows = appConfig.MaxQueryRows
 	}
 
-	ds, dbName, err := selectDb(tid)
+	dn, ds, dbName, err := selectDb(tid)
 	if err != nil {
 		http.Error(w, err.Error(), 405)
 		return
 	}
 
-	tableName, primaryKeys := parseSql(querySql, ds)
-	headers, rows, execTime, costTime, err, msg := processSql(tid, querySql, ds, maxRows)
+	actualSql := querySql
+	if IsCodedSql(querySql) {
+		actualSql = SqlOf(dn).DecodeQuerySql(querySql)
+	}
+
+	tableName, primaryKeys := parseSql(actualSql, dn, ds)
+	headers, rows, execTime, costTime, err, msg := processActualSql(tid, querySql, actualSql, dn, ds, maxRows)
 	primaryKeysIndex := findPrimaryKeysIndex(tableName, primaryKeys, headers)
 
 	queryResult := QueryResult{
@@ -297,6 +307,7 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 		Error:            gou.Error(err),
 		ExecutionTime:    execTime,
 		CostTime:         costTime,
+		DriverName:       dn,
 		DatabaseName:     dbName,
 		TableName:        tableName,
 		PrimaryKeysIndex: primaryKeysIndex,
@@ -305,10 +316,7 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 
 	if "true" == withColumns {
 		tableColumns := make(map[string][]string)
-		columnsSql := `select TABLE_NAME, COLUMN_NAME, COLUMN_COMMENT, COLUMN_KEY, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
-			from INFORMATION_SCHEMA.COLUMNS
-			where TABLE_SCHEMA = '` + dbName + `' order by TABLE_NAME`
-		_, colRows, _, _, _, _ := processSql(tid, columnsSql, ds, 0)
+		_, colRows, _, _, _, _ := executeQuery(SqlOf(dn).TableColumnsSql(dbName), dn, ds, 0)
 
 		tableName := ""
 		var columns []string
@@ -329,9 +337,7 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 			tableColumns[tableName] = columns
 		}
 
-		tableCommentSql := `select TABLE_NAME, TABLE_COMMENT from INFORMATION_SCHEMA.TABLES ` +
-			`where TABLE_SCHEMA = '` + dbName + `'`
-		_, tableRows, _, _, _, _ := processSql(tid, tableCommentSql, ds, 0)
+		_, tableRows, _, _, _, _ := executeQuery(SqlOf(dn).TableCommentSql(dbName), dn, ds, 0)
 		for _, row := range tableRows {
 			tblName := row[1]
 			_, ok := tableColumns[tblName]
@@ -348,12 +354,22 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 	_ = json.NewEncoder(w).Encode(queryResult)
 }
 
-func processSql(tid, querySql, dbDataSource string, max int) ([]string, [][]string, string, string, error, string) {
+func processSql(tid, querySql, dbDriverName, dbDataSource string, max int) ([]string, [][]string, string, string, error, string) {
 	isShowHistory := strings.EqualFold("show history", querySql)
 	if isShowHistory {
 		return showHistory()
 	}
 
 	saveHistory(tid, querySql)
-	return executeQuery(querySql, dbDataSource, max)
+	return executeQuery(querySql, dbDriverName, dbDataSource, max)
+}
+
+func processActualSql(tid, querySql, actualSql, dbDriverName, dbDataSource string, max int) ([]string, [][]string, string, string, error, string) {
+	isShowHistory := strings.EqualFold("show history", actualSql)
+	if isShowHistory {
+		return showHistory()
+	}
+
+	saveHistory(tid, querySql)
+	return executeQuery(actualSql, dbDriverName, dbDataSource, max)
 }

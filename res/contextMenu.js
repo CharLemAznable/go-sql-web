@@ -313,12 +313,12 @@
                         $.appendSqlToSqlEditor(deleteSqls, true)
                     }
                 } else if (key === 'CreateInsertSQLsHighlighted') {
-                    var values = $.createInsertValuesHighlighted(resultId)
+                    var values = $.createInsertValuesHighlighted(resultId, result)
                     if (values !== '') {
                         $.appendSqlToSqlEditor(insertSqlPrefix + '\n' + values, true)
                     }
                 } else if (key === 'CreateInsertSQLsAll') {
-                    var values = $.createInsertValuesAll(resultId)
+                    var values = $.createInsertValuesAll(resultId, result)
                     $.appendSqlToSqlEditor(insertSqlPrefix + '\n' + values, true)
                 } else if (key === 'CreateDeleteSQLs') {
                     var deleteSqls = $.createDeleteSqls(result, resultId)
@@ -326,9 +326,9 @@
                         $.appendSqlToSqlEditor(deleteSqls, true)
                     }
                 } else if (key === 'ShowFullColumns') {
-                    $.executeQueryAjax(classifier, tid, tcode, tname, 'show full columns from ' + result.TableName)
+                    $.executeQueryAjax(classifier, tid, tcode, tname, 'processShowColumn ' + result.TableName)
                 } else if (key === 'ShowCreateTable') {
-                    $.showSqlAjax('show create table ' + result.TableName || 'xxx')
+                    $.showSqlAjax('showCreateTable ' + result.TableName || 'xxx')
                 } else if (key === 'ShowEqlTemplates') {
                     var insertEqlTemplate = $.createInsertEqlTemplate(result)
                     var deleteEqlTemplate = $.createDeleteEqlTemplate(result)

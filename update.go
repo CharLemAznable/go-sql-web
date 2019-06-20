@@ -31,17 +31,17 @@ func serveUpdate(w http.ResponseWriter, r *http.Request) {
 	sqls := strings.TrimSpace(r.FormValue("sqls"))
 	tid := strings.TrimSpace(r.FormValue("tid"))
 
-	dataSource, _, err := selectDb(tid)
+	driverName, dataSource, _, err := selectDb(tid)
 	if err != nil {
 		updateResult := UpdateResult{Ok: false, Message: err.Error()}
-		json.NewEncoder(w).Encode(updateResult)
+		_ = json.NewEncoder(w).Encode(updateResult)
 		return
 	}
 
-	db, err := sql.Open("mysql", dataSource)
+	db, err := sql.Open(driverName, dataSource)
 	if err != nil {
 		updateResult := UpdateResult{Ok: false, Message: err.Error()}
-		json.NewEncoder(w).Encode(updateResult)
+		_ = json.NewEncoder(w).Encode(updateResult)
 		return
 	}
 	defer db.Close()
@@ -51,7 +51,7 @@ func serveUpdate(w http.ResponseWriter, r *http.Request) {
 		saveHistory(tid, s)
 		sqlResult := gou.ExecuteSql(db, s, 0)
 		if sqlResult.Error != nil {
-			resultRows = append(resultRows, UpdateResultRow{Ok: false, Message: sqlResult.Error.Error()})
+			resultRows = append(resultRows, UpdateResultRow{Ok: false, Message: "Error: " + sqlResult.Error.Error()})
 		} else if sqlResult.RowsAffected == 1 {
 			resultRows = append(resultRows, UpdateResultRow{Ok: true, Message: "1 rows affected!"})
 		} else {
@@ -60,5 +60,5 @@ func serveUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updateResult := UpdateResult{Ok: true, Message: "Ok", RowsResult: resultRows}
-	json.NewEncoder(w).Encode(updateResult)
+	_ = json.NewEncoder(w).Encode(updateResult)
 }

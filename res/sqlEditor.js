@@ -56,7 +56,7 @@
                     tableName = codeMirror.getRange(word.anchor, word.head)
                 }
                 $.executeQueryAjax(activeClassifier, activeMerchantId, activeMerchantCode, activeMerchantName,
-                    'show full columns from ' + tableName)
+                    'processShowColumn ' + tableName)
             } else if (key === 'ParseTemplate') {
                 var sql = $.getEditorText()
                 $.templateSql(sql)

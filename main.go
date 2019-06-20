@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	_ "github.com/bingoohuang/go-sql-web/statiq"
+	_ "github.com/CharLemAznable/go-sql-web/statiq"
 )
 
 var StaticFs *fs.StatiqFS

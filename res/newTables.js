@@ -31,7 +31,7 @@ tableApp = new Vue({
             $.ajax({
                 type: 'POST',
                 url: contextPath + "/query",
-                data: {tid: tid, sql: 'show tables', withColumns: withColumns},
+                data: {tid: tid, sql: 'initTable', withColumns: withColumns},
                 success: function (content, textStatus, request) {
                     if (content && content.Error) {
                         $.alertMe(content.Error)
@@ -41,12 +41,25 @@ tableApp = new Vue({
                     if (withColumns) {
                         $.withColumnsCache[tid] = content.TableColumns
                     }
+
+                    $.currentDriverName = content.DriverName
+                    if ($.currentDriverName === "mysql") {
+                        $.wrapQuoteMark = '`'
+                    } else {
+                        $.wrapQuoteMark = '"'
+                    }
+
                     self.showTables(content, $.createTableColumns(tid))
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     $.alertMe(jqXHR.responseText + "\nStatus: " + textStatus + "\nError: " + errorThrown)
                 }
             })
+        },
+        reInitTable() {
+            var tid = activeMerchantId
+            delete $.withColumnsCache[tid]
+            tableApp.initTable()
         },
         showTables(content, tableColumns) {
             this.tableNames = content.Rows.map(row => row[1])
@@ -85,9 +98,9 @@ tableApp = new Vue({
                 callback: function (key, options) {
                     var tableName = $(this).text()
                     if (key === 'ShowFullColumns') {
-                        $.executeQueryAjax(activeClassifier, activeMerchantId, activeMerchantCode, activeMerchantName, 'show full columns from ' + tableName)
+                        $.executeQueryAjax(activeClassifier, activeMerchantId, activeMerchantCode, activeMerchantName, 'processShowColumn ' + tableName)
                     } else if (key === 'ShowCreateTable') {
-                        $.showSqlAjax('show create table ' + tableName)
+                        $.showSqlAjax('showCreateTable ' + tableName)
                     } else if (key === 'RenameTable') {
                         $.appendSqlToSqlEditor('RENAME TABLE ' + tableName + ' TO ' + tableName + "_new", true, false)
                     }
@@ -128,6 +141,11 @@ tableApp = new Vue({
             })
             if (selectedTableName.length <= 0) return alert("No tables checked")
 
+            if ($.currentDriverName === "goracle") {
+                $.appendSqlToSqlEditor(selectedTableName.map((table) =>
+                    'ALTER TABLE ' + table + ' RENAME TO ' + table + '_{{new}}').join(';\n'), true, false)
+                return
+            }
             let tables = selectedTableName.map((table) => table + ' to ' + table + '_{{new}}').join(', ')
             $.appendSqlToSqlEditor('RENAME TABLE ' + tables, true, false)
         },

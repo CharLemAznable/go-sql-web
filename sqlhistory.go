@@ -18,9 +18,9 @@ type SqlHistory struct {
 }
 
 func isByPassedSql(sql string) bool {
-	return sql == "show tables" ||
-		strings.Index(sql, "show create table") == 0 ||
-		strings.Index(sql, "show full columns from") == 0 ||
+	return sql == "initTable" ||
+		strings.Index(sql, "processShowColumn ") == 0 ||
+		strings.Index(sql, "showCreateTable ") == 0 ||
 		strings.Index(sql, "select * from") == 0
 }
 

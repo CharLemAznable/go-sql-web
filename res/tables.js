@@ -55,6 +55,8 @@
         return str.length === 1 && str.match(/[a-z._0-9]/i)
     }
 
+    $.currentDriverName = ""
+
     $.withColumnsCache = {}
 
     $.createTableColumns = function (tid) {
@@ -116,6 +118,27 @@
                 }
 
                 return title
+            }
+        }
+
+        return ""
+    }
+
+    $.findColumnDataType = function (tid, tableName, columnName) {
+        var withColumns = $.withColumnsCache[tid]
+        if (!withColumns) {
+            return ""
+        }
+
+        var columnWithComments = withColumns[tableName]
+        if (!columnWithComments) {
+            return ""
+        }
+
+        for (var i = 0, ii = columnWithComments.length; i < ii; i += 6) {
+            var fieldName = columnWithComments[i]
+            if (fieldName === columnName) {
+                return columnWithComments[i + 3]  // COLUMN_TYPE
             }
         }
 

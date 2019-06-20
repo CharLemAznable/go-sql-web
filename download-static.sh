@@ -21,3 +21,5 @@ curl -LO ${cdn_provider}/jquery-contextmenu/2.7.1/jquery.ui.position.min.js
 curl -LO https://cdn.jsdelivr.net/npm/sql-formatter@2.3.2/dist/sql-formatter.min.js
 curl -LO ${cdn_provider}/jquery-confirm/3.3.2/jquery-confirm.min.js
 curl -LO ${cdn_provider}/select2/4.0.6-rc.1/js/select2.min.js
+curl -LO https://unpkg.com/dayjs@1.8.14/dayjs.min.js
+curl -LO https://unpkg.com/dayjs@1.8.14/plugin/utc.js

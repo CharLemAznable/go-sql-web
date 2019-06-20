@@ -7,7 +7,7 @@
         $.ajax({
             type: 'POST',
             url: contextPath + "/query",
-            data: {tid: tid, sql: 'show full columns from ' + tableName},
+            data: {tid: tid, sql: 'processShowColumn ' + tableName},
             success: function (content, textStatus, request) {
                 if (content && content.Error) {
                     $.alertMe(content.Error)

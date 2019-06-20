@@ -16,6 +16,7 @@ type AppConfig struct {
 	ContextPath   string
 	ListenPort    int
 	MaxQueryRows  int
+	DriverName    string // goracle/mysql/pq/go-sqlite3
 	DataSource    string
 	DefaultTenant string
 	TrrHomeArea   string

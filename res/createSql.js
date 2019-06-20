@@ -9,19 +9,57 @@
         })
     };
 
+    $.formatOracleDateTimeValue = function (value, format) {
+        if (!value.endsWith("Z")) value += "Z";
+        return dayjs(value).utc().format(format);
+    }
+
+    function createValuePrefix(result) {
+        if ($.currentDriverName === "goracle") {
+            return 'into ' + wrapTableName(result.TableName) + '(' + createFieldNamesList(result) + ') values'
+        }
+        // mysql/pg/go-sqlite3
+        return ""
+    }
+
     function createValuePart(cells) {
         let valueSql = '(';
         cells.each(function (index, cell) {
             valueSql += index > 1 ? ', ' : '';
             if (index > 0) {
-                var newValue = $.cellNewValue($(cell))
-                valueSql += "(null)" === newValue ? 'null' : ('\'' + $.escapeSqlValue(newValue) + '\'')
+                let $cell = $(cell);
+                let newValue = $.cellNewValue($cell);
+                let dataType = $.cellDataType($cell);
+                if ("(null)" === newValue) {
+                    valueSql += 'null'
+                } else if ($.currentDriverName === "goracle" &&
+                    (dataType === "DATE" || dataType.startsWith("TIMESTAMP"))) {
+                    if (dataType === "DATE") {
+                        valueSql += 'to_date(\'' + $.formatOracleDateTimeValue(newValue,
+                            'YYYY-MM-DD HH:mm:ss') + '\',\'YYYY-MM-DD HH24:MI:SS\')'
+                    } else if (dataType.startsWith("TIMESTAMP")) {
+                        valueSql += 'to_timestamp(\'' + $.formatOracleDateTimeValue(newValue,
+                            'YYYY-MM-DD HH:mm:ss.SSS') + '\',\'YYYY-MM-DD HH24:MI:SS.FF3\')'
+                    }
+                } else {
+                    valueSql += '\'' + $.escapeSqlValue(newValue) + '\''
+                }
             }
         });
         return valueSql + ')'
     }
 
+    function joinValues(values) {
+        if ($.currentDriverName === "goracle") {
+            return values.join('\n') + "\nselect 1 from dual"
+        }
+        return values.join(',\n')
+    }
+
     $.createInsert = function (cells, result) {
+        if ($.currentDriverName === "goracle") {
+            return 'insert ' + createValuePrefix(result) + createValuePart(cells)
+        }
         return $.createInsertSqlPrefix(result) + createValuePart(cells)
     }
 
@@ -37,17 +75,20 @@
     }
 
     $.createInsertSqlPrefix = function (result) {
-        return 'insert into ' + wrapFieldName(result.TableName || 'xxx') + '(' + createFieldNamesList(result) + ') values'
+        if ($.currentDriverName === "goracle") {
+            return 'insert all '
+        }
+        return 'insert into ' + wrapTableName(result.TableName) + '(' + createFieldNamesList(result) + ') values'
     }
 
     $.createSelectEqlTemplate = function (result) {
-        return 'select ' + createFieldNamesList(result) + '\nfrom ' + wrapFieldName(result.TableName || 'xxx') + '\nwhere ' + createWhereItems(result)
+        return 'select ' + createFieldNamesList(result) + '\nfrom ' + wrapTableName(result.TableName) + '\nwhere ' + createWhereItems(result)
     }
     $.createUpdateEqlTemplate = function (result) {
-        return 'update ' + wrapFieldName(result.TableName || 'xxx') + '\nset ' + createSetItems(result) + '\nwhere ' + createWhereItems(result)
+        return 'update ' + wrapTableName(result.TableName) + '\nset ' + createSetItems(result) + '\nwhere ' + createWhereItems(result)
     }
     $.createDeleteEqlTemplate = function (result) {
-        return 'delete from ' + wrapFieldName(result.TableName || 'xxx') + '\nwhere ' + createWhereItems(result)
+        return 'delete from ' + wrapTableName(result.TableName) + '\nwhere ' + createWhereItems(result)
     }
 
     $.createJavaBean = function (tid, result) {
@@ -118,8 +159,10 @@
                 where += i > 0 ? ' and ' : ''
 
                 var pkName = headers[ki]
-                var pkValue = $.cellOldValue(cells.eq(ki + 1))
-                where += $.wrapWhereCondition(pkName, pkValue)
+                let $eq = cells.eq(ki + 1);
+                let pkValue = $.cellOldValue($eq);
+                let dataType = $.cellDataType($eq);
+                where += $.wrapWhereCondition(pkName, pkValue, dataType)
             }
         } else {
             var wherePart = ''
@@ -128,8 +171,10 @@
                     wherePart += wherePart != '' ? ' and ' : ''
                     var fieldName = headers[index - 1]
 
-                    var whereValue = $.cellOldValue($(cell))
-                    wherePart += $.wrapWhereCondition(fieldName, whereValue)
+                    let $cell = $(cell);
+                    let whereValue = $.cellOldValue($cell);
+                    let dataType = $.cellDataType($cell);
+                    wherePart += $.wrapWhereCondition(fieldName, whereValue, dataType)
                 }
             })
             where += wherePart
@@ -139,7 +184,7 @@
 
 
     $.createInsertEqlTemplate = function (result) {
-        var values = 'insert into ' + wrapFieldName(result.TableName || 'xxx') + '(' + createFieldNamesList(result) + ')\nvalues('
+        var values = 'insert into ' + wrapTableName(result.TableName) + '(' + createFieldNamesList(result) + ')\nvalues('
         var headers = result.Headers
         for (var i = 0; i < headers.length; ++i) {
             values += i > 0 ? ', ' : ''
@@ -157,7 +202,7 @@
             sql += wrapFieldName(headers[i])
         }
 
-        return sql + ' from ' + wrapFieldName(result.TableName || 'xxx')
+        return sql + ' from ' + wrapTableName(result.TableName)
     }
 
     $.createSelectSqls = function (selectSql, result, resultId) {
@@ -193,34 +238,36 @@
 
 
     var createDeleteForRow = function (result, cells) {
-        var sql = 'delete from ' + wrapFieldName(result.TableName || 'xxx') + ' where '
+        var sql = 'delete from ' + wrapTableName(result.TableName) + ' where '
         var where = createWhereClause(result, cells)
         return sql + where
     }
 
 
-    $.createInsertValuesHighlighted = function (resultId) {
+    $.createInsertValuesHighlighted = function (resultId, result) {
         var tbody = $('#queryResult' + resultId + ' tbody')
         var values = []
+        var valuePrefix = createValuePrefix(result)
         tbody.find('tr.highlight:visible').each(function (index, tr) {
             var cells = $(tr).find('td.dataCell')
-            var valuePart = createValuePart(cells)
+            var valuePart = valuePrefix + createValuePart(cells)
             values.push(valuePart)
         })
 
-        return values.join(',\n')
+        return joinValues(values)
     }
 
-    $.createInsertValuesAll = function (resultId) {
+    $.createInsertValuesAll = function (resultId, result) {
         var tbody = $('#queryResult' + resultId + ' tbody')
         var values = []
+        var valuePrefix = createValuePrefix(result)
         tbody.find('tr:visible').each(function (index, tr) {
             var cells = $(tr).find('td.dataCell')
-            var valuePart = createValuePart(cells)
+            var valuePart = valuePrefix + createValuePart(cells)
             values.push(valuePart)
         })
 
-        return values.join(',\n')
+        return joinValues(values)
     }
 
     $.createUpdateSetPart = function (cells, result, headRow) {
@@ -229,28 +276,44 @@
             var changedCell = $(this).hasClass('changedCell')
             if (changedCell) {
                 if (updateSql == null) {
-                    updateSql = 'update ' + wrapFieldName(result.TableName || 'xxx') + ' set '
+                    updateSql = 'update ' + wrapTableName(result.TableName) + ' set '
                 } else {
                     updateSql += ', '
                 }
                 var fieldName = $(headRow.get(jndex + 1)).text()
-                var newValue = $.cellNewValue($(cell))
-                updateSql += $.wrapWhereCondition(fieldName, newValue)
+                let $cell = $(cell);
+                let newValue = $.cellNewValue($cell);
+                let dataType = $.cellDataType($cell);
+                updateSql += $.wrapWhereCondition(fieldName, newValue, dataType)
             }
         })
         return updateSql
     }
 
     $.cellNewValue = function ($cell) {
-        return $.trim($cell.hasClass('textAreaTd') ? $cell.find('textarea').val() : $cell.text())
+        // return $.trim($cell.hasClass('textAreaTd') ? $cell.find('textarea').val() : $cell.text())
+        let text = $cell.hasClass('textAreaTd') ? $cell.find('textarea').val() : $cell.text();
+        if ($.currentDriverName === "mysql") text = $.trim(text)
+        return text
     }
+
+    $.wrapQuoteMark = '`'
 
     function wrapFieldName(fieldName) {
         if (fieldName.indexOf('_') >= 0) return fieldName
-        else return '`' + fieldName + '`'
+        else return $.wrapQuoteMark + fieldName + $.wrapQuoteMark
     }
 
     $.wrapFieldName = wrapFieldName
+
+    function wrapTableName(tableName) {
+        let tn = tableName || 'xxx'
+        if ($.wrapQuoteMark === '`')
+            return $.wrapQuoteMark + tn + $.wrapQuoteMark
+        else return tn
+    }
+
+    $.wrapTableName = wrapTableName
 
     var cellOldValue = function ($cell) {
         var old = $cell.attr('old');
@@ -258,6 +321,12 @@
     }
 
     $.cellOldValue = cellOldValue
+
+    var cellDataType = function ($cell) {
+        return ($cell.attr("sql_data_type") || "").toUpperCase();
+    }
+
+    $.cellDataType = cellDataType
 
     $.createWherePart = function (result, headRow, cells) {
         var sql = ' where '
@@ -267,8 +336,10 @@
                 sql += i > 0 ? ' and ' : ''
 
                 var pkName = $(headRow.get(ki + 1)).text()
-                var $cell = $(cells.get(ki))
-                sql += $.wrapWhereCondition(pkName, $.cellOldValue($cell))
+                let $cell = $(cells.get(ki))
+                let fieldValue = $.cellOldValue($cell);
+                let dataType = $.cellDataType($cell);
+                sql += $.wrapWhereCondition(pkName, fieldValue, dataType)
             }
             return sql
         } else {
@@ -278,7 +349,10 @@
                     wherePart += wherePart !== '' ? ' and ' : ''
 
                     var fieldName = $(headRow.get(jndex + 1)).text()
-                    wherePart += $.wrapWhereCondition(fieldName, $.cellOldValue($(this)))
+                    let $this = $(this);
+                    let oldValue = $.cellOldValue($this);
+                    let dataType = $.cellDataType($this);
+                    wherePart += $.wrapWhereCondition(fieldName, oldValue, dataType)
                 }
             })
 

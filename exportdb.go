@@ -13,7 +13,7 @@ import (
 func exportDatabase(w http.ResponseWriter, r *http.Request) {
 	tid := strings.TrimSpace(r.FormValue("tid"))
 
-	tdb, err := searchMerchantDb(tid, appConfig.DataSource)
+	tdb, err := searchMerchantDb(tid, appConfig.DriverName, appConfig.DataSource)
 	if err != nil {
 		http.Error(w, err.Error(), 405)
 		return
@@ -44,11 +44,11 @@ func customMysqlDump(tn *Merchant, w http.ResponseWriter, tid string) error {
 	fileName := tn.MerchantCode + "." + TimeNow() + ".sql"
 	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 	log.Println("use custom mysqldump to export database")
-	tenantDataSource, _, err := selectDb(tid)
+	tenantDriverName, tenantDataSource, _, err := selectDb(tid)
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open("mysql", tenantDataSource)
+	db, err := sql.Open(tenantDriverName, tenantDataSource)
 	if err != nil {
 		return err
 	}

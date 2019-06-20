@@ -9,54 +9,53 @@ import (
 
 	"fmt"
 	"github.com/bingoohuang/gou"
+
+	_ "github.com/go-goracle/goracle"
 	_ "github.com/go-sql-driver/mysql"
-	_ "gopkg.in/goracle.v2"
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func selectDb(tid string) (string, string, error) {
+func selectDb(tid string) (string, string, string, error) {
 	if tid == "" || tid == "trr" {
-		_, rows, _, _, err, _ := executeQuery("SELECT DATABASE()", appConfig.DataSource, 0)
+		_, rows, _, _, err, _ := executeQuery(
+			SqlOf(appConfig.DriverName).SelectDb(),
+			appConfig.DriverName, appConfig.DataSource, 0)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 
-		return appConfig.DataSource, rows[0][1], nil
+		return appConfig.DriverName, appConfig.DataSource, rows[0][1], nil
 	}
 
-	return selectDbByTid(tid, appConfig.DataSource)
+	return selectDbByTid(tid, appConfig.DriverName, appConfig.DataSource)
 }
 
-func selectDbByTid(tid string, ds string) (string, string, error) {
-	queryDbSql := "SELECT DB_USERNAME, DB_PASSWORD, PROXY_IP, PROXY_PORT, DB_NAME " +
-		"FROM TR_F_DB WHERE MERCHANT_ID = '" + tid + "'"
-
-	_, data, _, _, err, _ := executeQuery(queryDbSql, ds, 1)
+func selectDbByTid(tid string, dn, ds string) (string, string, string, error) {
+	_, data, _, _, err, _ := executeQuery(SqlOf(dn).SelectDbByTid(tid), dn, ds, 1)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	if len(data) == 0 {
-		return "", "", errors.New("no db found for tid:" + tid)
+		return "", "", "", errors.New("no db found for tid:" + tid)
 	} else if len(data) > 1 {
 		log.Println("data", data)
-		return "", "", errors.New("more than one db found")
+		return "", "", "", errors.New("more than one db found")
 	}
 
 	row := data[0]
-
-	// user:pass@tcp(127.0.0.1:3306)/db?charset=utf8
-	return row[1] + ":" + row[2] + "@tcp(" + row[3] + ":" + row[4] + ")/" + row[5] +
-		"?charset=utf8mb4,utf8&timeout=3s", row[5], nil
+	return SqlOf(dn).SelectDbByTidResult(row)
 }
 
-func executeQuery(querySql, dataSource string, max int) (
+func executeQuery(querySql, driverName, dataSource string, max int) (
 	[]string /*header*/, [][]string, /*data*/
 	string /*executionTime*/, string /*costTime*/, error, string /* msg */) {
-	db, err := sql.Open("mysql", dataSource)
+	db, err := sql.Open(driverName, dataSource)
 	if err != nil {
 		return nil, nil, "", "", err, ""
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	return query(db, querySql, max)
 }

@@ -47,7 +47,7 @@ func serveSearchDb(w http.ResponseWriter, req *http.Request) {
 			"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '" + searchKey +
 			"' OR MERCHANT_CODE = '" + searchKey + "' OR MERCHANT_NAME LIKE '%" + searchKey + "%'"
 	}
-	_, data, _, _, err, _ := executeQuery(searchSql, appConfig.DataSource, 0)
+	_, data, _, _, err, _ := executeQuery(searchSql, appConfig.DriverName, appConfig.DataSource, 0)
 	if err != nil {
 		http.Error(w, err.Error(), 405)
 		return
@@ -80,11 +80,11 @@ type MerchantDb struct {
 	Database   string
 }
 
-func searchMerchantDb(tid string, ds string) (*MerchantDb, error) {
+func searchMerchantDb(tid string, dn, ds string) (*MerchantDb, error) {
 	sql := "SELECT MERCHANT_ID, DB_USERNAME, DB_PASSWORD, PROXY_IP, PROXY_PORT, DB_NAME " +
 		"FROM TR_F_DB WHERE MERCHANT_ID = '" + tid + "'"
 
-	_, data, _, _, err, _ := executeQuery(sql, ds, 1)
+	_, data, _, _, err, _ := executeQuery(sql, dn, ds, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func searchMerchantByTcode(tcode string) (*Merchant, error) {
 }
 
 func searchMerchantBySql(searchSql string, maxRows int) (*Merchant, error) {
-	_, data, _, _, err, _ := executeQuery(searchSql, appConfig.DataSource, maxRows)
+	_, data, _, _, err, _ := executeQuery(searchSql, appConfig.DriverName, appConfig.DataSource, maxRows)
 	if err != nil {
 		return nil, err
 	}

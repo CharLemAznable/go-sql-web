@@ -25,7 +25,13 @@
     }
 
 
-    function createRows(result) {
+    function createRows(tid, result) {
+        var dataTypes = ['" sql_data_type="#']
+        for (var j = 0; j < result.Headers.length; ++j) {
+            var headName = result.Headers[j]
+            var dataType = $.findColumnDataType(tid, result.TableName, headName)
+            dataTypes[dataTypes.length] = '" sql_data_type="' + dataType
+        }
         var rowHtml = ''
         for (var i = 0; i < result.Rows.length; i++) {
             rowHtml += '<tr class="dataRow">'
@@ -43,6 +49,8 @@
                 if (result.Headers && !needEscape) {
                     rowHtml += $.escapeContextMenuCssName(result.Headers[j - 1])
                 }
+
+                rowHtml += dataTypes[j]
 
                 if (needEscape) {
                     rowHtml += '"><textarea readonly>' + cellValue + '</textarea></td>'
@@ -154,7 +162,7 @@
 
         table += '<tbody>'
         if (hasRows) {
-            table += createRows(result)
+            table += createRows(tid, result)
         } else if (result.Rows && result.Rows.length == 0) {
             table += '<tr class="dataRow clonedRow">'
             table += '<td></td>'

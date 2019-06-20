@@ -1,5 +1,7 @@
 module github.com/CharLemAznable/go-sql-web
 
+go 1.12
+
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/bingoohuang/gou v0.0.0-20190519004841-fdf834f3b415
@@ -16,4 +18,7 @@ require (
 	gopkg.in/goracle.v2 v2.16.3
 )
 
-replace github.com/tdewolff/parse => github.com/tdewolff/parse v0.0.0-20181024085210-fced451e0bed
+replace (
+	github.com/tdewolff/parse => github.com/tdewolff/parse v0.0.0-20181024085210-fced451e0bed
+	golang.org/x/sys => github.com/golang/sys v0.0.0-20190606203320-7fc4e5ec1444
+)

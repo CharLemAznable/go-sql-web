@@ -86,13 +86,19 @@ func (t *goracleTemp) DescribeTable(tableName string) string {
 
 func (t *goracleTemp) DecodeQuerySql(querySql string) string {
     if "initTable" == querySql {
-        return "select table_name from user_tables order by table_name"
+        return `select table_name as name from user_tables
+                union all
+                select synonym_name||'≈'||table_owner||'.'||table_name as name from user_synonyms
+                order by name`
     } else if strings.HasPrefix(querySql, "processShowColumn ") {
         tableName := querySql[len("processShowColumn "):]
         return t.DescribeTable(tableName)
     } else if strings.HasPrefix(querySql, "showCreateTable ") {
         tableName := querySql[len("showCreateTable "):]
-        return `SELECT '` + tableName + `', DBMS_METADATA.GET_DDL('TABLE','` + tableName + `') FROM DUAL`
+        return `SELECT U.OBJECT_NAME, DBMS_METADATA.GET_DDL(U.OBJECT_TYPE, U.OBJECT_NAME)
+                  FROM USER_OBJECTS U
+                 WHERE U.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
+                   AND U.OBJECT_NAME = '` + tableName + `'`
     }
     return ""
 }

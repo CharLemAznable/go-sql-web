@@ -1,6 +1,7 @@
 ContextPath = ""
 ListenPort  = 8381
 MaxQueryRows  = 1000
+DriverName = "mysql"
 DataSource = "root:111111@tcp(192.168.136.90:3307)/typhon?charset=utf8"
 DevMode = true
 AuthBasic = false

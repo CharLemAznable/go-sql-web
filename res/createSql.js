@@ -284,7 +284,7 @@
                 let $cell = $(cell);
                 let newValue = $.cellNewValue($cell);
                 let dataType = $.cellDataType($cell);
-                updateSql += $.wrapWhereCondition(fieldName, newValue, dataType)
+                updateSql += $.wrapUpdateSetItem(fieldName, newValue, dataType)
             }
         })
         return updateSql

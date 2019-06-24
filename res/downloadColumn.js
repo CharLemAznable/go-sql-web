@@ -105,4 +105,26 @@
         }
         return condition
     }
+
+    $.wrapUpdateSetItem = function (fieldName, fieldValue, dataType) {
+        var condition = $.wrapFieldName(fieldName)
+        if ("(null)" === fieldValue) {
+            condition += ' = null'
+        } else if ($.currentDriverName === "goracle") {
+            if ("" === fieldValue) {
+                condition += ' = null'
+            } else if (dataType === "DATE") {
+                condition += ' = to_date(\'' + $.formatOracleDateTimeValue(
+                    fieldValue, 'YYYY-MM-DD HH:mm:ss')+ '\',\'YYYY-MM-DD HH24:MI:SS\')'
+            } else if (dataType.startsWith("TIMESTAMP")) {
+                condition += ' = to_timestamp(\'' + $.formatOracleDateTimeValue(
+                    fieldValue, 'YYYY-MM-DD HH:mm:ss.SSS') + '\',\'YYYY-MM-DD HH24:MI:SS.FF3\')'
+            } else {
+                condition += ' = \'' + $.escapeSqlValue(fieldValue) + '\''
+            }
+        } else {
+            condition += ' = \'' + $.escapeSqlValue(fieldValue) + '\''
+        }
+        return condition
+    }
 })()

@@ -98,9 +98,6 @@ tableApp = new Vue({
                 callback: function (key, options) {
                     var tableName = $(this).text()
 
-                    let pos = tableName.indexOf('≈');
-                    if (pos > 0) tableName = tableName.substr(0, pos)
-
                     if (key === 'ShowFullColumns') {
                         $.executeQueryAjax(activeClassifier, activeMerchantId, activeMerchantCode, activeMerchantName, 'processShowColumn ' + tableName)
                     } else if (key === 'ShowCreateTable') {
@@ -127,9 +124,6 @@ tableApp = new Vue({
         ,
         selectTable(tableName) {
             if (this.selectMode) return
-
-            let pos = tableName.indexOf('≈');
-            if (pos > 0) tableName = tableName.substr(0, pos)
 
             var sql = 'select * from ' + tableName
             var tableQuery = $.SingleTableQuery[tableName.toUpperCase()];

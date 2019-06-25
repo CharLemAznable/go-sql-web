@@ -32,7 +32,9 @@ func selectDb(tid string) (string, string, string, error) {
 }
 
 func selectDbByTid(tid string, dn, ds string) (string, string, string, error) {
-	_, data, _, _, err, _ := executeQuery(SqlOf(dn).SelectDbByTid(tid), dn, ds, 1)
+	_, data, _, _, err, _ := executeQuery(
+		`SELECT DB_USERNAME, DB_PASSWORD, PROXY_IP, PROXY_PORT, DB_NAME FROM TR_F_DB WHERE MERCHANT_ID = '` + tid + `'`,
+		dn, ds, 1)
 	if err != nil {
 		return "", "", "", err
 	}

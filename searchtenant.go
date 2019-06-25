@@ -34,7 +34,7 @@ func serveSearchDb(w http.ResponseWriter, req *http.Request) {
 			MerchantCode: "trr",
 			HomeArea:     "south-center",
 			Classifier:   "trr"}
-		json.NewEncoder(w).Encode(searchResult)
+		_ = json.NewEncoder(w).Encode(searchResult)
 		return
 	}
 
@@ -67,7 +67,7 @@ func serveSearchDb(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	json.NewEncoder(w).Encode(searchResult)
+	_ = json.NewEncoder(w).Encode(searchResult)
 
 }
 

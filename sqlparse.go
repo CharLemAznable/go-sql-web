@@ -18,7 +18,7 @@ func parseSql(querySql, dbDriverName, dbDataSource string) (string, []string) {
 		if err == nil {
 			tableName = findSingleTableName(sqlParseResult)
 			if tableName != "" {
-				primaryKeys = findTablePrimaryKeys(tableName, dbDriverName, dbDataSource)
+				tableName, primaryKeys = findTablePrimaryKeys(tableName, dbDriverName, dbDataSource)
 			}
 		}
 	default:
@@ -50,23 +50,29 @@ func findPrimaryKeysIndex(tableName string, primaryKeys, headers []string) []int
 	return primaryKeysIndex
 }
 
-func findTablePrimaryKeys(tableName string, dbDriverName, dbDataSource string) []string {
+func findTablePrimaryKeys(tableName string, dbDriverName, dbDataSource string) (string, []string) {
+	qualifiedName := tableName
+	_, qual, _, _, err, _ := executeQuery(
+		SqlOf(dbDriverName).QualifyTable(tableName),
+		dbDriverName, dbDataSource, 0)
+	if nil == err {
+		qualifiedName = qual[0][1]
+	}
+
 	primaryKeys := make([]string, 0)
 	_, data, _, _, err, _ := executeQuery(
 		SqlOf(dbDriverName).DescribeTable(tableName),
 		dbDriverName, dbDataSource, 0)
-	if err != nil {
-		return primaryKeys
-	}
-
-	for _, row := range data {
-		if row[4] == "PRI" { // primary keys
-			fieldName := row[1]
-			primaryKeys = append(primaryKeys, fieldName)
+	if nil == err {
+		for _, row := range data {
+			if row[4] == "PRI" { // primary keys
+				fieldName := row[1]
+				primaryKeys = append(primaryKeys, fieldName)
+			}
 		}
 	}
 
-	return primaryKeys
+	return qualifiedName, primaryKeys
 }
 
 func findSingleTableName(sqlParseResult sqlparser.Statement) string {
@@ -80,5 +86,13 @@ func findSingleTableName(sqlParseResult sqlparser.Statement) string {
 		return ""
 	}
 
-	return sqlparser.GetTableName(aliasTableExpr.Expr).String()
+	tableName, ok := aliasTableExpr.Expr.(sqlparser.TableName)
+	if !ok {
+		return ""
+	}
+
+	if tableName.Qualifier.IsEmpty() {
+		return tableName.Name.String()
+	}
+	return tableName.Qualifier.String() + "." + tableName.Name.String()
 }

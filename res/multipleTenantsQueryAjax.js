@@ -66,6 +66,7 @@
             '<td>Cost:&nbsp;<span id="summaryCostTime' + resultId + '">0</span></td>' +
             '<td><span class="opsSpan" id="screenShot' + resultId + '">截图</span></td>' +
             '<td><span class="opsSpan" id="closeResult' + resultId + '">Close</span></td>' +
+            '<td><span class="opsSpan" id="closeOthers' + resultId + '">CloseOthers</span></td>' +
             '</tr>' +
             '</table>'
         table += '<div id="divResult' + resultId + '" class="divResult">'

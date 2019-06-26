@@ -117,8 +117,8 @@
             '<td>Time:&nbsp;' + result.ExecutionTime + '</td>' +
             '<td>Cost:&nbsp;' + result.CostTime + '</td>' +
             '<td><span class="opsSpan" id="screenShot' + resultId + '">截图</span></td>' +
-            '<td>' +
-            '<span class="opsSpan" id="closeResult' + resultId + '">Close</span>' +
+            '<td><span class="opsSpan" id="closeResult' + resultId + '">Close</span></td>' +
+            '<td><span class="opsSpan" id="closeOthers' + resultId + '">CloseOthers</span>' +
             createMultipleTenantsExecutable(resultId, result, hasRows) +
             '</td>' +
             '<td' + (result.Error && (' class="error">' + result.Error) || ('>' + result.Msg)) + '</td>' +

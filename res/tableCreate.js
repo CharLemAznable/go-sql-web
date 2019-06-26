@@ -55,6 +55,13 @@
 
     $.attachOpsResultDivEvent = function (resultId) {
         var divId = '#executionResultDiv' + resultId
+        $('#closeOthers' + resultId).click(function () {
+            $('.executionResult').each(function () {
+                if ($(this).attr('id') !== 'executionResultDiv' + resultId) {
+                    $(this).remove()
+                }
+            })
+        })
         $('#closeResult' + resultId).click(function () {
             $(divId).remove()
         })

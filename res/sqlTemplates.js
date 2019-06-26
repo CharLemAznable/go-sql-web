@@ -7,6 +7,7 @@
             '<td>Template Processing</td>' +
             '<td><span class="opsSpan" id="screenShot' + resultId + '">截图</span></td>' +
             '<td><span class="opsSpan" id="closeResult' + resultId + '">Close</span></td>' +
+            '<td><span class="opsSpan" id="closeOthers' + resultId + '">CloseOthers</span></td>' +
             '</tr></table>'
     }
 
@@ -344,6 +345,13 @@
 
 
     function attachCloseEvent(resultId) {
+        $('#closeOthers' + resultId).click(function () {
+            $('.executionResult').each(function () {
+                if ($(this).attr('id') !== 'executionResultDiv' + resultId) {
+                    $(this).remove()
+                }
+            })
+        })
         $('#closeResult' + resultId).click(function () {
             $('#executionResultDiv' + resultId).remove()
         })

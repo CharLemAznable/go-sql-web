@@ -14,6 +14,9 @@ func parseSql(querySql, dbDriverName, dbDataSource string) (string, []string) {
 	firstWord := strings.ToUpper(gou.FirstWord(querySql))
 	switch firstWord {
 	case "SELECT":
+		if "goracle" == dbDriverName {
+			querySql = strings.ReplaceAll(querySql, `"`, "`")
+		}
 		sqlParseResult, err := sqlparser.Parse(querySql)
 		if err == nil {
 			tableName = findSingleTableName(sqlParseResult)
@@ -55,7 +58,7 @@ func findTablePrimaryKeys(tableName string, dbDriverName, dbDataSource string) (
 	_, qual, _, _, err, _ := executeQuery(
 		SqlOf(dbDriverName).QualifyTable(tableName),
 		dbDriverName, dbDataSource, 0)
-	if nil == err {
+	if nil == err && len(qual) > 0 {
 		qualifiedName = qual[0][1]
 	}
 

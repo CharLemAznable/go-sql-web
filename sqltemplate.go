@@ -48,9 +48,9 @@ func (t *goracleTemp) QualifyTable(tableName string) string {
 
 func (t *goracleTemp) DescribeTable(tableName string) string {
     owner, objectName := t.parseTableName(tableName)
-    ownerStr := `'` + owner + `'`
+    ownerCond := `= UPPER('` + owner + `')`
     if "" == owner {
-        ownerStr = `(SELECT USER FROM DUAL)`
+        ownerCond = `= USER`
     }
     return `SELECT
        T.COLUMN_NAME AS "FIELD"
@@ -87,7 +87,7 @@ func (t *goracleTemp) DescribeTable(tableName string) string {
     ON M.TABLE_NAME = T.TABLE_NAME
    AND M.COLUMN_NAME = T.COLUMN_NAME
       ,ALL_COL_COMMENTS C
-      ,(SELECT AO.OWNER || '.' || AO.OBJECT_NAME AS "FULL_NAME"
+      ,(SELECT AO.OWNER||'.'||AO.OBJECT_NAME AS "FULL_NAME"
               ,CASE AO.OBJECT_TYPE
                WHEN 'TABLE' THEN AO.OWNER
                WHEN 'SYNONYM' THEN AN.TABLE_OWNER
@@ -97,13 +97,15 @@ func (t *goracleTemp) DescribeTable(tableName string) string {
                WHEN 'SYNONYM' THEN AN.TABLE_NAME
                ELSE NULL END AS "OBJECT_NAME"
           FROM ALL_OBJECTS AO
+          LEFT JOIN ALL_USERS AU
+            ON AO.OWNER = AU.USERNAME
           LEFT JOIN ALL_SYNONYMS AN
-            ON AO.OBJECT_TYPE = 'SYNONYM'
-           AND AO.OWNER = AN.OWNER
+            ON AO.OWNER = AN.OWNER
            AND AO.OBJECT_NAME = AN.SYNONYM_NAME
-         WHERE AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
-           AND AO.OWNER IN (SELECT USERNAME FROM ALL_USERS WHERE ORACLE_MAINTAINED = 'N')
-           AND UPPER(AO.OWNER) = UPPER(` + ownerStr + `)
+           AND AO.OBJECT_TYPE = 'SYNONYM'
+         WHERE AU.ORACLE_MAINTAINED = 'N'
+           AND AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
+           AND UPPER(AO.OWNER) ` + ownerCond + `
            AND UPPER(AO.OBJECT_NAME) = UPPER('` + objectName + `')) O
  WHERE T.OWNER = O.OWNER
    AND T.TABLE_NAME = O.OBJECT_NAME
@@ -115,36 +117,42 @@ func (t *goracleTemp) DescribeTable(tableName string) string {
 
 func (t *goracleTemp) DecodeQuerySql(querySql string) string {
     if "initTable" == querySql {
-        return `SELECT
-       AO.OWNER || '.' || AO.OBJECT_NAME
+        return `
+SELECT AO.OWNER||'.'||AO.OBJECT_NAME
   FROM ALL_OBJECTS AO
- WHERE AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
-   AND AO.OWNER IN (SELECT USERNAME FROM ALL_USERS WHERE ORACLE_MAINTAINED = 'N')
- ORDER BY AO.OWNER, AO.OBJECT_NAME`
+  LEFT JOIN ALL_USERS AU
+    ON AO.OWNER = AU.USERNAME
+  LEFT JOIN ALL_SYNONYMS AN
+    ON AO.OWNER = AN.OWNER
+   AND AO.OBJECT_NAME = AN.SYNONYM_NAME
+   AND AO.OBJECT_TYPE = 'SYNONYM'
+ WHERE AU.ORACLE_MAINTAINED = 'N'
+   AND AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
+ ORDER BY DECODE(AO.OWNER, USER, 1, 2), AO.OWNER, AO.OBJECT_NAME`
     } else if strings.HasPrefix(querySql, "processShowColumn ") {
         tableName := querySql[len("processShowColumn "):]
         return t.DescribeTable(tableName)
     } else if strings.HasPrefix(querySql, "showCreateTable ") {
         tableName := querySql[len("showCreateTable "):]
         owner, objectName := t.parseTableName(tableName)
-        ownerStr := `'` + owner + `'`
+        ownerCond := `= UPPER('` + owner + `')`
         if "" == owner {
-            ownerStr = `(SELECT USER FROM DUAL)`
+            ownerCond = `= USER`
         }
-        return `SELECT
-       AO.OWNER || '.' || AO.OBJECT_NAME
+        return `
+SELECT AO.OWNER||'.'||AO.OBJECT_NAME
       ,DBMS_METADATA.GET_DDL(AO.OBJECT_TYPE, AO.OBJECT_NAME, AO.OWNER)
   FROM ALL_OBJECTS AO
  WHERE AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
-   AND UPPER(AO.OWNER) = UPPER(` + ownerStr + `)
+   AND UPPER(AO.OWNER) ` + ownerCond + `
    AND UPPER(AO.OBJECT_NAME) = UPPER('` + objectName + `')`
     }
     return ""
 }
 
 func (t *goracleTemp) TableColumnsSql(dbName string) string {
-    return `SELECT
-       O.FULL_NAME AS "TABLE_NAME"
+    return `
+SELECT O.FULL_NAME AS "TABLE_NAME"
       ,T.COLUMN_NAME
       ,C.COMMENTS AS "COLUMN_COMMENT"
       ,(SELECT CASE WHEN T.COLUMN_NAME = M.COLUMN_NAME THEN 'PRI' ELSE '' END FROM DUAL) AS "COLUMN_KEY"
@@ -179,7 +187,7 @@ func (t *goracleTemp) TableColumnsSql(dbName string) string {
     ON M.TABLE_NAME = T.TABLE_NAME
    AND M.COLUMN_NAME = T.COLUMN_NAME
       ,ALL_COL_COMMENTS C
-      ,(SELECT AO.OWNER || '.' || AO.OBJECT_NAME AS "FULL_NAME"
+      ,(SELECT AO.OWNER||'.'||AO.OBJECT_NAME AS "FULL_NAME"
               ,CASE AO.OBJECT_TYPE
                WHEN 'TABLE' THEN AO.OWNER
                WHEN 'SYNONYM' THEN AN.TABLE_OWNER
@@ -189,13 +197,15 @@ func (t *goracleTemp) TableColumnsSql(dbName string) string {
                WHEN 'SYNONYM' THEN AN.TABLE_NAME
                ELSE NULL END AS "OBJECT_NAME"
           FROM ALL_OBJECTS AO
+          LEFT JOIN ALL_USERS AU
+            ON AO.OWNER = AU.USERNAME
           LEFT JOIN ALL_SYNONYMS AN
-            ON AO.OBJECT_TYPE = 'SYNONYM'
-           AND AO.OWNER = AN.OWNER
+            ON AO.OWNER = AN.OWNER
            AND AO.OBJECT_NAME = AN.SYNONYM_NAME
-         WHERE AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
-           AND AO.OWNER IN (SELECT USERNAME FROM ALL_USERS WHERE ORACLE_MAINTAINED = 'N')) O
- WHERE T.OWNER = O.OWNER
+           AND AO.OBJECT_TYPE = 'SYNONYM'
+         WHERE AU.ORACLE_MAINTAINED = 'N'
+           AND AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')) O
+         WHERE T.OWNER = O.OWNER
    AND T.TABLE_NAME = O.OBJECT_NAME
    AND C.TABLE_NAME = T.TABLE_NAME
    AND C.COLUMN_NAME = T.COLUMN_NAME
@@ -204,11 +214,11 @@ func (t *goracleTemp) TableColumnsSql(dbName string) string {
 }
 
 func (t *goracleTemp) TableCommentSql(dbName string) string {
-    return `SELECT 
-       O.FULL_NAME AS "TABLE_NAME"
+    return `
+SELECT O.FULL_NAME AS "TABLE_NAME"
       ,T.COMMENTS AS "TABLE_COMMENT"
   FROM ALL_TAB_COMMENTS T
-      ,(SELECT AO.OWNER || '.' || AO.OBJECT_NAME AS "FULL_NAME"
+      ,(SELECT AO.OWNER||'.'||AO.OBJECT_NAME AS "FULL_NAME"
               ,CASE AO.OBJECT_TYPE
                WHEN 'TABLE' THEN AO.OWNER
                WHEN 'SYNONYM' THEN AN.TABLE_OWNER
@@ -218,12 +228,14 @@ func (t *goracleTemp) TableCommentSql(dbName string) string {
                WHEN 'SYNONYM' THEN AN.TABLE_NAME
                ELSE NULL END AS "OBJECT_NAME"
           FROM ALL_OBJECTS AO
+          LEFT JOIN ALL_USERS AU
+            ON AO.OWNER = AU.USERNAME
           LEFT JOIN ALL_SYNONYMS AN
-            ON AO.OBJECT_TYPE = 'SYNONYM'
-           AND AO.OWNER = AN.OWNER
+            ON AO.OWNER = AN.OWNER
            AND AO.OBJECT_NAME = AN.SYNONYM_NAME
-         WHERE AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
-           AND AO.OWNER IN (SELECT USERNAME FROM ALL_USERS WHERE ORACLE_MAINTAINED = 'N')) O
+           AND AO.OBJECT_TYPE = 'SYNONYM'
+         WHERE AU.ORACLE_MAINTAINED = 'N'
+           AND AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')) O
  WHERE T.OWNER = O.OWNER
    AND T.TABLE_NAME = O.OBJECT_NAME
  ORDER BY O.FULL_NAME`

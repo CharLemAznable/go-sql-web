@@ -70,6 +70,8 @@ func (t *goracleTemp) DescribeTable(tableName string) string {
                             'FLOAT', '(' || DATA_PRECISION || ')',
                             'DATE', NULL,
                             'TIMESTAMP(6)', NULL,
+                            'CLOB', NULL,
+                            'BLOB', NULL,
                             '(' || DATA_LENGTH || ')') AS "TYPE"
       ,(SELECT CASE WHEN T.NULLABLE = 'N' THEN 'NO' ELSE 'YES' END FROM DUAL) AS "NULL"
       ,(SELECT CASE WHEN T.COLUMN_NAME = M.COLUMN_NAME THEN 'PRI' ELSE '' END FROM DUAL) AS "KEY"
@@ -172,6 +174,8 @@ SELECT O.FULL_NAME AS "TABLE_NAME"
                             'FLOAT', '(' || DATA_PRECISION || ')',
                             'DATE', NULL,
                             'TIMESTAMP(6)', NULL,
+                            'CLOB', NULL,
+                            'BLOB', NULL,
                             '(' || DATA_LENGTH || ')') AS "COLUMN_TYPE"
       ,(SELECT CASE WHEN T.NULLABLE = 'N' THEN 'NO' ELSE 'YES' END FROM DUAL) AS "IS_NULLABLE"
       ,T.DATA_DEFAULT AS "COLUMN_DEFAULT"

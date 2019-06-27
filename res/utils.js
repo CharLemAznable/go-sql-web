@@ -10,21 +10,36 @@
         var sqls = []
 
         var inQuoted = false
+        var inDeclare = false
         var pos = 0
         var len = sqlsString.length
         for (var i = 0; i < len; ++i) {
             var ch = sqlsString[i]
             if (ch === '\\') {
                 ++i
-            } else if (ch == '\'') {
+            } else if (ch === '\'') {
                 if (inQuoted && i + 1 < len && sqlsString[i + 1] === '\'') {
                     ++i  // jump escape for literal apostrophe, or single quote
                 } else {
                     inQuoted = !inQuoted
                 }
+            } else if (ch === '/') {
+                if (!inQuoted) {
+                    inDeclare = false
+                    tryAddSql(sqls, sqlsString.substring(pos, i))
+                    pos = i + 1
+                }
             } else if (!inQuoted && ch === separateChar) {
-                tryAddSql(sqls, sqlsString.substring(pos, i))
-                pos = i + 1
+                if (!inDeclare) {
+                    var sql = sqlsString.substring(pos, i)
+                    sql = sql.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+                    if (sql.toUpperCase().startsWith("DECLARE")) {
+                        inDeclare = true
+                    } else {
+                        tryAddSql(sqls, sql)
+                        pos = i + 1
+                    }
+                }
             }
         }
 

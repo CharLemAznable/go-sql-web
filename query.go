@@ -296,6 +296,9 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 	if IsCodedSql(querySql) {
 		actualSql = SqlOf(dn).DecodeQuerySql(querySql)
 	}
+	if strings.HasPrefix(strings.ToUpper(actualSql), "DECLARE") {
+		actualSql = actualSql + ";"
+	}
 
 	tableName, primaryKeys := parseSql(actualSql, dn, ds)
 	headers, rows, execTime, costTime, err, msg := processActualSql(tid, querySql, actualSql, dn, ds, maxRows)

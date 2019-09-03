@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gonet"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -17,7 +17,7 @@ type ImportResult struct {
 }
 
 func importDatabase(w http.ResponseWriter, r *http.Request) {
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 
 	if !writeAuthOk(r) {
 		http.Error(w, "write auth required", 405)
@@ -48,7 +48,7 @@ func importDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mysqlImport := "mysql -h" + d.Host + " -P" + d.Port + " -u" + d.Username + " -p" + d.Password + " " + d.Database + "<" + sqlFileName
-	stdout, err := gou.ExecuteBash(mysqlImport)
+	stdout, err := ExecuteBash(mysqlImport)
 	ignoredErr := "mysql: [Warning] Using a password on the command line interface can be insecure."
 	if err != nil {
 		errMsg := strings.TrimFunc(err.Error(), func(r rune) bool {

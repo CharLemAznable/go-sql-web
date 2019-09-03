@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gonet"
+	"github.com/bingoohuang/gou/enc"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ const linksConfigFile = "linksConfig.toml"
 func serveSaveLinksConfig(w http.ResponseWriter, r *http.Request) {
 	linksConfig := r.FormValue("linksConfig")
 
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 	err := ioutil.WriteFile(linksConfigFile, []byte(linksConfig), 0644)
 	if err != nil {
 		_ = json.NewEncoder(w).Encode(struct {
@@ -26,7 +27,7 @@ func serveSaveLinksConfig(w http.ResponseWriter, r *http.Request) {
 		})
 		_, _ = w.Write([]byte(err.Error()))
 	} else {
-		jsonBytes, err := gou.TomlToJson([]byte(linksConfig))
+		jsonBytes, err := enc.TomlToJSON([]byte(linksConfig))
 		ok := "OK"
 		if err != nil {
 			ok = err.Error()
@@ -43,7 +44,7 @@ func serveSaveLinksConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveLoadLinksConfig(w http.ResponseWriter, r *http.Request) {
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 
 	if _, err := os.Stat(linksConfigFile); os.IsNotExist(err) {
 		_ = json.NewEncoder(w).Encode(struct {
@@ -57,7 +58,7 @@ func serveLoadLinksConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	linksConfig, _ := ioutil.ReadFile(linksConfigFile)
-	jsonBytes, err := gou.TomlToJson([]byte(linksConfig))
+	jsonBytes, err := enc.TomlToJSON([]byte(linksConfig))
 	if err != nil {
 		fmt.Println("tomlToJson err:", err.Error())
 	}

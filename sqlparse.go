@@ -1,17 +1,17 @@
 package main
 
 import (
+	"github.com/bingoohuang/gou/str"
 	"net/http"
 	"strings"
 
-	"github.com/bingoohuang/gou"
 	"github.com/xwb1989/sqlparser"
 )
 
 func parseSql(querySql, dbDriverName, dbDataSource string) (string, []string) {
 	var tableName string
 	var primaryKeys []string
-	firstWord := strings.ToUpper(gou.FirstWord(querySql))
+	firstWord := strings.ToUpper(str.FirstWord(querySql))
 	switch firstWord {
 	case "SELECT":
 		if "goracle" == dbDriverName {
@@ -32,7 +32,7 @@ func parseSql(querySql, dbDriverName, dbDataSource string) (string, []string) {
 
 func writeAuthOk(r *http.Request) bool {
 	return len(appConfig.WriteAuthUserNames) == 0 ||
-		gou.IndexOf(loginedUserName(r), appConfig.WriteAuthUserNames) >= 0
+		str.IndexOf(loginedUserName(r), appConfig.WriteAuthUserNames...) >= 0
 }
 
 func findPrimaryKeysIndex(tableName string, primaryKeys, headers []string) []int {

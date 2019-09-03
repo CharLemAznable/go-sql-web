@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gou/coll"
 	"os"
 	"strconv"
 	"strings"
@@ -55,7 +55,7 @@ func showHistory() (header []string, data [][]string, executionTime, costTime st
 
 	reader := bufio.NewReader(file)
 
-	deque := gou.NewFifoQueue(30)
+	deque := coll.NewFifoQueue(30)
 	for {
 		rowData, err := reader.ReadBytes('\n')
 		if err != nil {

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/BurntSushi/toml"
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gou/htt"
 	"log"
 	"strings"
 )
@@ -42,7 +42,7 @@ type AppConfig struct {
 var configFile string
 var appConfig AppConfig
 
-var authParam gou.MustAuthParam
+var authParam htt.MustAuthParam
 
 func init() {
 	flag.StringVar(&configFile, "configFile", "appConfig.toml", "config file path")
@@ -57,11 +57,12 @@ func init() {
 		appConfig.ContextPath = "/" + appConfig.ContextPath
 	}
 
-	authParam = gou.MustAuthParam{
+	authParam = htt.MustAuthParam{
 		EncryptKey:  appConfig.EncryptKey,
 		CookieName:  appConfig.CookieName,
-		RedirectUri: appConfig.RedirectUri,
-		LocalUrl:    appConfig.LocalUrl,
+		RedirectURI: appConfig.RedirectUri,
+		LocalURL:    appConfig.LocalUrl,
 		ForceLogin:  appConfig.ForceLogin,
 	}
+	htt.PrepareMustAuthFlag(&authParam)
 }

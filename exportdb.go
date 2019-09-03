@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/sqlmore"
 	"io"
 	"log"
 	"net/http"
@@ -53,7 +53,7 @@ func customMysqlDump(tn *Merchant, w http.ResponseWriter, tid string) error {
 		return err
 	}
 	defer db.Close()
-	err = gou.MySqlDump(db, w)
+	err = sqlmore.MySQLDump(db, w)
 	if err != nil {
 		return err
 	}

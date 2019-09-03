@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gonet"
+	"github.com/bingoohuang/gou/htt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,16 +14,16 @@ func loginedUserName(r *http.Request) string {
 		return ""
 	}
 
-	cookie := cookieValue.(*gou.CookieValueImpl)
+	cookie := cookieValue.(*htt.CookieValueImpl)
 	return cookie.Name
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
-	gou.HeadContentTypeHtml(w)
+	gonet.ContentTypeHTML(w)
 	cookieValue := r.Context().Value("CookieValue")
 	loginedHtml := ""
 	if cookieValue != nil {
-		cookie := cookieValue.(*gou.CookieValueImpl)
+		cookie := cookieValue.(*htt.CookieValueImpl)
 		loginedHtml = `<span id="loginSpan"><img class="loginAvatar" src="` + cookie.Avatar +
 			`"/><span class="loginName">` + cookie.Name + `</span></span>`
 	}
@@ -30,12 +31,12 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 	indexHtml := string(MustAsset("index.html"))
 	indexHtml = strings.Replace(indexHtml, "<LOGIN/>", loginedHtml, 1)
 
-	html := gou.MinifyHtml(indexHtml, appConfig.DevMode)
+	html := htt.MinifyHTML(indexHtml, appConfig.DevMode)
 
-	mergeCss := gou.MergeCss(MustAsset, FilterAssetNames(AssetNames, ".css"))
-	css := gou.MinifyCss(mergeCss, appConfig.DevMode)
-	mergeScripts := gou.MergeJs(MustAsset, FilterAssetNames(AssetNames, ".js"))
-	js := gou.MinifyJs(mergeScripts, appConfig.DevMode)
+	mergeCss := htt.MergeCSS(MustAsset, FilterAssetNames(AssetNames, ".css"))
+	css := htt.MinifyCSS(mergeCss, appConfig.DevMode)
+	mergeScripts := htt.MergeJs(MustAsset, FilterAssetNames(AssetNames, ".js"))
+	js := htt.MinifyJs(mergeScripts, appConfig.DevMode)
 	html = strings.Replace(html, "/*.CSS*/", css, 1)
 	html = strings.Replace(html, "/*.SCRIPT*/", js, 1)
 	html = strings.Replace(html, "${contextPath}", appConfig.ContextPath, -1)

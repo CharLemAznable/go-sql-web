@@ -3,13 +3,12 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"github.com/bingoohuang/sqlmore"
 	"log"
 	"strconv"
 	"time"
 
 	"fmt"
-	"github.com/bingoohuang/gou"
-
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
@@ -65,19 +64,19 @@ func executeQuery(querySql, driverName, dataSource string, max int) (
 func query(db *sql.DB, query string, maxRows int) ([]string, [][]string, string, string, error, string) {
 	executionTime := time.Now().Format("2006-01-02 15:04:05.000")
 
-	sqlResult := gou.ExecuteSql(db, query, maxRows)
+	sqlResult := sqlmore.ExecSQL(db, query, maxRows, "(null)")
 	data := addRowsSeq(&sqlResult)
-	fmt.Println("IsQuerySql:", sqlResult.IsQuerySql)
+	fmt.Println("IsQuerySql:", sqlResult.IsQuerySQL)
 
 	msg := ""
-	if !sqlResult.IsQuerySql {
+	if !sqlResult.IsQuerySQL {
 		msg = strconv.FormatInt(sqlResult.RowsAffected, 10) + " rows were affected"
 	}
 
 	return sqlResult.Headers, data, executionTime, sqlResult.CostTime.String(), sqlResult.Error, msg
 }
 
-func addRowsSeq(sqlResult *gou.ExecuteSqlResult) [][]string {
+func addRowsSeq(sqlResult *sqlmore.ExecResult) [][]string {
 	data := make([][]string, 0)
 	if sqlResult.Rows != nil {
 		for index, row := range sqlResult.Rows {

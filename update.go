@@ -3,7 +3,8 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"github.com/bingoohuang/gou"
+	"github.com/bingoohuang/gonet"
+	"github.com/bingoohuang/sqlmore"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,7 +22,7 @@ type UpdateResult struct {
 }
 
 func serveUpdate(w http.ResponseWriter, r *http.Request) {
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 
 	if !writeAuthOk(r) {
 		http.Error(w, "write auth required", 405)
@@ -49,7 +50,7 @@ func serveUpdate(w http.ResponseWriter, r *http.Request) {
 	resultRows := make([]UpdateResultRow, 0)
 	for _, s := range strings.Split(sqls, ";\n") {
 		saveHistory(tid, s)
-		sqlResult := gou.ExecuteSql(db, s, 0)
+		sqlResult := sqlmore.ExecSQL(db, s, 0, "(null)")
 		if sqlResult.Error != nil {
 			resultRows = append(resultRows, UpdateResultRow{Ok: false, Message: "Error: " + sqlResult.Error.Error()})
 		} else if sqlResult.RowsAffected == 1 {

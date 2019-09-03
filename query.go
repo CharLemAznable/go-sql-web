@@ -5,14 +5,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/bingoohuang/gonet"
+	"github.com/bingoohuang/gou/str"
+	"github.com/bingoohuang/sqlmore"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/bingoohuang/gou"
 )
 
 type QueryResult struct {
@@ -31,7 +32,7 @@ type QueryResult struct {
 }
 
 func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 	tid := strings.TrimSpace(req.FormValue("tid"))
 	columnName := strings.TrimSpace(req.FormValue("columnName"))
 
@@ -56,7 +57,7 @@ func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
 		Msg           string
 	}{
 		Rows:          rows,
-		Error:         gou.Error(err),
+		Error:         str.Error(err),
 		ExecutionTime: executionTime,
 		CostTime:      costTime,
 		DatabaseName:  databaseName,
@@ -67,14 +68,15 @@ func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
 }
 
 func multipleTenantsQuery(w http.ResponseWriter, req *http.Request) {
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 	sqlString := strings.TrimFunc(req.FormValue("sql"), func(r rune) bool {
 		return unicode.IsSpace(r) || r == ';'
 	})
 
-	sqls := gou.SplitSqls(sqlString, ';')
+	sqls := sqlmore.SplitSqls(sqlString, ';')
 	for _, subSql := range sqls {
-		if gou.IsQuerySql(subSql) {
+		_, isQuery := sqlmore.IsQuerySQL(subSql)
+		if isQuery {
 			continue
 		}
 		if !writeAuthOk(req) {
@@ -106,7 +108,7 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 	dbDriverName, dbDataSource, databaseName, err := selectDbByTid(tid, appConfig.DriverName, appConfig.DataSource)
 	if err != nil {
 		resultChan <- &QueryResult{
-			Error: gou.Error(err),
+			Error: str.Error(err),
 			Tid:   tid,
 		}
 		return
@@ -115,7 +117,7 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 	db, err := sql.Open(dbDriverName, dbDataSource)
 	if err != nil {
 		resultChan <- &QueryResult{
-			Error:        gou.Error(err),
+			Error:        str.Error(err),
 			DriverName:   dbDriverName,
 			DatabaseName: databaseName,
 			Tid:          tid,
@@ -127,19 +129,19 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 
 	executionTime := time.Now().Format("2006-01-02 15:04:05.000")
 
-	sqls := gou.SplitSqls(sqlString, ';')
+	sqls := sqlmore.SplitSqls(sqlString, ';')
 	sqlsLen := len(sqls)
 
 	if sqlsLen == 1 {
-		sqlResult := gou.ExecuteSql(db, sqls[0], 0)
+		sqlResult := sqlmore.ExecSQL(db, sqls[0], 0, "(null)")
 		msg := ""
-		if !sqlResult.IsQuerySql {
+		if !sqlResult.IsQuerySQL {
 			msg = strconv.FormatInt(sqlResult.RowsAffected, 10) + " rows were affected"
 		}
 		result := QueryResult{
 			Headers:       sqlResult.Headers,
 			Rows:          sqlResult.Rows,
-			Error:         gou.Error(sqlResult.Error),
+			Error:         str.Error(sqlResult.Error),
 			ExecutionTime: executionTime,
 			CostTime:      sqlResult.CostTime.String(),
 			DriverName:    dbDriverName,
@@ -155,7 +157,8 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 	querySqlMixed := false
 	if sqlsLen > 1 {
 		for _, oneSql := range sqls {
-			if gou.IsQuerySql(oneSql) {
+			_, isQuery := sqlmore.IsQuerySQL(oneSql)
+			if isQuery {
 				querySqlMixed = true
 				break
 			}
@@ -176,7 +179,7 @@ func executeSqlInTid(tid string, resultChan chan *QueryResult, sqlString string)
 	start := time.Now()
 	msg := ""
 	for _, oneSql := range sqls {
-		sqlResult := gou.ExecuteSql(db, oneSql, 0)
+		sqlResult := sqlmore.ExecSQL(db, oneSql, 0, "(null)")
 		if msg != "" {
 			msg += "\n"
 		}
@@ -264,12 +267,13 @@ func downloadColumn(w http.ResponseWriter, req *http.Request) {
 }
 
 func serveQuery(w http.ResponseWriter, req *http.Request) {
-	gou.HeadContentTypeJson(w)
+	gonet.ContentTypeJSON(w)
 	querySql := strings.TrimFunc(req.FormValue("sql"), func(r rune) bool {
 		return unicode.IsSpace(r) || r == ';'
 	})
 
-	if !IsCodedSql(querySql) && !gou.IsQuerySql(querySql) && !writeAuthOk(req) {
+	_, isQuery := sqlmore.IsQuerySQL(querySql)
+	if !IsCodedSql(querySql) && !isQuery && !writeAuthOk(req) {
 		http.Error(w, "write auth required", 405)
 		return
 	}
@@ -307,7 +311,7 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 	queryResult := QueryResult{
 		Headers:          headers,
 		Rows:             rows,
-		Error:            gou.Error(err),
+		Error:            str.Error(err),
 		ExecutionTime:    execTime,
 		CostTime:         costTime,
 		DriverName:       dn,

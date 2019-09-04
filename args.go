@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/BurntSushi/toml"
+	"github.com/CharLemAznable/amber"
 	"github.com/bingoohuang/gou/htt"
 	"log"
 	"strings"
@@ -36,6 +37,14 @@ type AppConfig struct {
 	LocalUrl    string
 	ForceLogin  bool
 
+	AmberLoginEnabled  bool
+	AmberAppID         string
+	AmberEncryptKey    string
+	AmberCookieName    string
+	AmberAmberLoginURL string
+	AmberLocalURL      string
+	AmberForceLogin    bool
+
 	WriteAuthUserNames []string // UserNames which has write auth
 }
 
@@ -65,4 +74,15 @@ func init() {
 		ForceLogin:  appConfig.ForceLogin,
 	}
 	htt.PrepareMustAuthFlag(&authParam)
+
+	if appConfig.AmberLoginEnabled {
+		amber.ConfigInstance = amber.NewConfig(
+			amber.WithAppID(appConfig.AmberAppID),
+			amber.WithEncryptKey(appConfig.AmberEncryptKey),
+			amber.WithCookieName(appConfig.AmberCookieName),
+			amber.WithAmberLoginURL(appConfig.AmberAmberLoginURL),
+			amber.WithLocalURL(appConfig.AmberLocalURL),
+			amber.WithForceLogin(appConfig.AmberForceLogin),
+		)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/CharLemAznable/amber"
 	"github.com/bingoohuang/gonet"
 	"github.com/bingoohuang/gou/htt"
 	"github.com/bingoohuang/gou/poem"
@@ -100,11 +101,19 @@ func ServeStatic() http.HandlerFunc {
 func handleFuncNoDump(r *mux.Router, path string, f http.HandlerFunc, requiredGzip, requiredBasicAuth bool) {
 	wrap := f
 	if requiredBasicAuth && appConfig.AuthBasic {
-		wrap = poem.RandomPoemBasicAuth(wrap)
+		if appConfig.AuthBasicUser != "" {
+			wrap = BasicAuth(wrap, appConfig.AuthBasicUser, appConfig.AuthBasicPass)
+		} else {
+			wrap = poem.RandomPoemBasicAuth(wrap)
+		}
 	}
 
 	if requiredBasicAuth {
-		wrap = htt.MustAuth(wrap, authParam, "CookieValue")
+		if nil != amber.ConfigInstance {
+			wrap = amber.AuthAmber(wrap)
+		} else {
+			wrap = htt.MustAuth(wrap, authParam, "CookieValue")
+		}
 	}
 
 	if requiredGzip {
@@ -130,7 +139,11 @@ func handleFunc(r *mux.Router, path string, f http.HandlerFunc, requiredGzip, re
 	}
 
 	if requiredBasicAuth {
-		wrap = htt.MustAuth(wrap, authParam, "CookieValue")
+		if nil != amber.ConfigInstance {
+			wrap = amber.AuthAmber(wrap)
+		} else {
+			wrap = htt.MustAuth(wrap, authParam, "CookieValue")
+		}
 	}
 
 	if requiredGzip {

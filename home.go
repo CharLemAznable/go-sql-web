@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/CharLemAznable/amber"
 	"github.com/bingoohuang/gonet"
 	"github.com/bingoohuang/gou/htt"
 	"net/http"
@@ -10,22 +11,35 @@ import (
 
 func loginedUserName(r *http.Request) string {
 	cookieValue := r.Context().Value("CookieValue")
-	if cookieValue == nil {
-		return ""
+	if nil != cookieValue {
+		cookie := cookieValue.(*htt.CookieValueImpl)
+		return cookie.Name
 	}
 
-	cookie := cookieValue.(*htt.CookieValueImpl)
-	return cookie.Name
+	cookieValue = r.Context().Value(amber.CookieValueContextKey)
+	if nil != cookieValue {
+		cookie := cookieValue.(*amber.CookieValue)
+		return cookie.Username
+	}
+
+	return ""
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	gonet.ContentTypeHTML(w)
-	cookieValue := r.Context().Value("CookieValue")
 	loginedHtml := ""
-	if cookieValue != nil {
+
+	cookieValue := r.Context().Value("CookieValue")
+	if nil != cookieValue {
 		cookie := cookieValue.(*htt.CookieValueImpl)
 		loginedHtml = `<span id="loginSpan"><img class="loginAvatar" src="` + cookie.Avatar +
 			`"/><span class="loginName">` + cookie.Name + `</span></span>`
+	}
+
+	cookieValue = r.Context().Value(amber.CookieValueContextKey)
+	if nil != cookieValue {
+		cookie := cookieValue.(*amber.CookieValue)
+		loginedHtml = `<span id="loginSpan"><span class="loginName">` + cookie.Username + `</span></span>`
 	}
 
 	indexHtml := string(MustAsset("index.html"))

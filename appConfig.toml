@@ -17,6 +17,14 @@ RedirectUri = ""
 LocalUrl  = ""
 ForceLogin  = false
 
+AmberLoginEnabled = false
+AmberAppID = ""
+AmberEncryptKey = ""
+AmberCookieName = "amber-login-auth"
+AmberAmberLoginURL = ""
+AmberLocalURL = ""
+AmberForceLogin = false
+
 [YogaProxy.north]
 Proxy="http://127.0.0.1:8092"
 

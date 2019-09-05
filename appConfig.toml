@@ -18,11 +18,11 @@ LocalUrl  = ""
 ForceLogin  = false
 
 AmberLoginEnabled = false
-AmberAppID = ""
+AmberAppId = ""
 AmberEncryptKey = ""
 AmberCookieName = "amber-login-auth"
-AmberAmberLoginURL = ""
-AmberLocalURL = ""
+AmberAmberLoginUrl = ""
+AmberLocalUrl = ""
 AmberForceLogin = false
 
 [YogaProxy.north]

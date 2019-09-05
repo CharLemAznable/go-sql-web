@@ -38,11 +38,11 @@ type AppConfig struct {
 	ForceLogin  bool
 
 	AmberLoginEnabled  bool
-	AmberAppID         string
+	AmberAppId         string
 	AmberEncryptKey    string
 	AmberCookieName    string
-	AmberAmberLoginURL string
-	AmberLocalURL      string
+	AmberAmberLoginUrl string
+	AmberLocalUrl      string
 	AmberForceLogin    bool
 
 	WriteAuthUserNames []string // UserNames which has write auth
@@ -77,11 +77,11 @@ func init() {
 
 	if appConfig.AmberLoginEnabled {
 		amber.ConfigInstance = amber.NewConfig(
-			amber.WithAppId(appConfig.AmberAppID),
+			amber.WithAppId(appConfig.AmberAppId),
 			amber.WithEncryptKey(appConfig.AmberEncryptKey),
 			amber.WithCookieName(appConfig.AmberCookieName),
-			amber.WithAmberLoginUrl(appConfig.AmberAmberLoginURL),
-			amber.WithLocalUrl(appConfig.AmberLocalURL),
+			amber.WithAmberLoginUrl(appConfig.AmberAmberLoginUrl),
+			amber.WithLocalUrl(appConfig.AmberLocalUrl),
 			amber.WithForceLogin(appConfig.AmberForceLogin),
 		)
 	}

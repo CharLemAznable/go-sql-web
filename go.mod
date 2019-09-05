@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/CharLemAznable/amber v0.2.1
+	github.com/CharLemAznable/amber v0.3.0
 	github.com/bingoohuang/gonet v0.0.0-20190729063044-0a2a8ec96e17
 	github.com/bingoohuang/gou v0.0.0-20190724062522-59c35e658334
 	github.com/bingoohuang/sqlmore v0.0.0-20190711152446-8687de30af5c

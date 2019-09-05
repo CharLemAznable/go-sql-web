@@ -77,11 +77,11 @@ func init() {
 
 	if appConfig.AmberLoginEnabled {
 		amber.ConfigInstance = amber.NewConfig(
-			amber.WithAppID(appConfig.AmberAppID),
+			amber.WithAppId(appConfig.AmberAppID),
 			amber.WithEncryptKey(appConfig.AmberEncryptKey),
 			amber.WithCookieName(appConfig.AmberCookieName),
-			amber.WithAmberLoginURL(appConfig.AmberAmberLoginURL),
-			amber.WithLocalURL(appConfig.AmberLocalURL),
+			amber.WithAmberLoginUrl(appConfig.AmberAmberLoginURL),
+			amber.WithLocalUrl(appConfig.AmberLocalURL),
 			amber.WithForceLogin(appConfig.AmberForceLogin),
 		)
 	}

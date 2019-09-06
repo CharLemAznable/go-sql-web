@@ -70,7 +70,7 @@ func main() {
 	handleFunc(r, "/searchDb", serveSearchDb, false, true)
 	handleFunc(r, "/action", serveAction, false, true)
 
-	http.HandleFunc("/static/", ServeStatic())
+	http.HandleFunc(appConfig.ContextPath+"/static/", ServeStatic())
 	http.Handle("/", r)
 
 	fmt.Println("start to listen at ", appConfig.ListenPort)
@@ -83,7 +83,7 @@ func main() {
 
 func ServeStatic() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := r.URL.Path[1:]
+		filename := r.URL.Path[len(appConfig.ContextPath)+1:]
 		fi, _ := AssetInfo(filename)
 		if fi == nil {
 			w.WriteHeader(http.StatusNotFound)

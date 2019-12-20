@@ -68,10 +68,16 @@
         var holder = {}
         if (!supportsMultipleTenantsExecutable(result, hasRows, holder)) return ""
 
+        var keys = []
+        var indexes = []
+        for (var key in holder) {
+            keys.push(key)
+            indexes.push(holder[key])
+        }
+
         return '<span id="multipleTenantsExecutable' + queryResultId + '">'
-            + '<span class="opsSpan" merchantIdIndex="' + holder.tiIndex
-            + '" merchantNameIndex="' + holder.tnameIndex
-            + '" merchantCodeIndex="' + holder.tcodeIndex
+            + '<span class="opsSpan" multipleExecKeys="' + keys.join(',')
+            + '" multipleExecIndexes="' + indexes.join(',')
             + '">ExecuteSqlAmongTenants</span>'
             + '<span>BatchSize:<input class="batchSize" placeholder="20">'
             + '<label><input class="confirm" type="checkbox" name="checkbox" value="value">Confirm to Continue?</label>'
@@ -91,11 +97,15 @@
         if (!hasRows) return false
 
         var headers = result.Headers
-        holder.tiIndex = findColumnIndex(headers, 'MERCHANT_ID')
-        holder.tnameIndex = findColumnIndex(headers, 'MERCHANT_NAME')
-        holder.tcodeIndex = findColumnIndex(headers, 'MERCHANT_CODE')
+        var execKeys = result.MultipleTenantsExec || []
+        if (execKeys.length === 0) return false
 
-        return holder.tiIndex >= 0 && holder.tnameIndex >= 0 && holder.tcodeIndex >= 0
+        for (var i = 0; i < execKeys.length; ++i) {
+            var key = execKeys[i]
+            holder[key] = findColumnIndex(headers, key)
+            if (holder[key] < 0) return false
+        }
+        return true
     }
 
     $.convertSeqNum = function (resultId) {

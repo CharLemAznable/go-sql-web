@@ -25,20 +25,20 @@
         })
     }
 
-    function createTenantMap(tenants) {
+    function createTenantsMap(tenants, tenantIdKey) {
         var tenantsMap = {}
         for (var i = 0; i < tenants.length; ++i) {
             var tenant = tenants[i]
-            tenantsMap[tenant.merchantId] = tenant
+            tenantsMap[tenant[tenantIdKey]] = tenant
         }
         return tenantsMap
     }
 
-    function createTenantIdGroup(tenants, groupSize) {
+    function createTenantIdGroup(tenants, tenantIdKey, groupSize) {
         var tenantIdsGroup = []
         var group = []
         for (var i = 0; i < tenants.length; ++i) {
-            group.push(tenants[i].merchantId)
+            group.push(tenants[i][tenantIdKey])
 
             if (group.length == groupSize) {
                 tenantIdsGroup.push(group)
@@ -110,20 +110,18 @@
             }
 
             var $this = $(this)
-
-            var merchantIdIndex = parseInt($this.attr('merchantIdIndex'))
-            var merchantNameIndex = parseInt($this.attr('merchantNameIndex'))
-            var merchantCodeIndex = parseInt($this.attr('merchantCodeIndex'))
-            var tenants = $.findTenants(resultId, merchantIdIndex, merchantNameIndex, merchantCodeIndex)
+            var multipleExecKeys = $this.attr('multipleExecKeys').split(',')
+            var multipleExecIndexes = $this.attr('multipleExecIndexes').split(',')
+            var tenants = $.findTenants(resultId, multipleExecKeys, multipleExecIndexes)
 
             var batchSizeInput = multipleTenantsExecutable.find('.batchSize');
             var batchSize = parseInt(batchSizeInput.val() || batchSizeInput.prop('placeholder'))
-            var tenantIdsGroup = createTenantIdGroup(tenants, batchSize)
+            var tenantIdsGroup = createTenantIdGroup(tenants, multipleExecKeys[0], batchSize)
 
             if (tenantIdsGroup.length > 0) {
-                var tenantsMap = createTenantMap(tenants)
+                var tenantsMap = createTenantsMap(tenants)
                 var batchConfirm = multipleTenantsExecutable.find('.confirm').prop('checked')
-                $.multipleTenantsQueryAjax(sql, tenantsMap, ++queryResultId, 0, tenantIdsGroup, 0, 0, Date.now(), batchConfirm)
+                $.multipleTenantsQueryAjax(sql, tenantsMap, multipleExecKeys, ++queryResultId, 0, tenantIdsGroup, 0, 0, Date.now(), batchConfirm)
             }
         })
     }

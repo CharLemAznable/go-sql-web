@@ -1,13 +1,18 @@
 ContextPath = ""
 ListenPort  = 8381
 MaxQueryRows  = 1000
+# DriverName = "goracle"
+# DataSource = "oracle://cpp:cpp@//192.168.28.188:1521/crm"
+# DataSource = "cpp/cpp@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=192.168.28.188)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=crm)))"
+# DataSource = "casterly:Lannisters@tcp(127.0.0.1:3306)/rock?charset=utf8"
+# DataSource = "root:111111@tcp(192.168.136.90:3307)/typhon?charset=utf8"
 DriverName = "mysql"
-DataSource = "root:111111@tcp(192.168.136.90:3307)/typhon?charset=utf8"
+DataSource = "cp:1q2w3e4r5t@tcp(test.go.easy-hi.com:33306)/trr?charset=utf8"
 DevMode = true
 AuthBasic = false
 AuthBasicUser = ""
 AuthBasicPass = ""
-MultiTenants = false
+MultiTenants = true
 ImportDb = false
 DefaultTenant = ""
 

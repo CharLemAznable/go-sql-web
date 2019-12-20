@@ -17,7 +17,7 @@ type SqlTemp interface {
 
 // goracle
 
-type goracleTemp struct {}
+type goracleTemp struct{}
 
 func (t *goracleTemp) parseTableName(tableName string) (string, string) {
     pos := strings.Index(tableName, ".")
@@ -249,7 +249,7 @@ var goracleInstance = &goracleTemp{}
 
 // mysql
 
-type mysqlTemp struct {}
+type mysqlTemp struct{}
 
 func (t *mysqlTemp) SelectDb() string {
     return "SELECT DATABASE()"

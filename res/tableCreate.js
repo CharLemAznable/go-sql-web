@@ -119,7 +119,7 @@
             var tenantIdsGroup = createTenantIdGroup(tenants, multipleExecKeys[0], batchSize)
 
             if (tenantIdsGroup.length > 0) {
-                var tenantsMap = createTenantsMap(tenants)
+                var tenantsMap = createTenantsMap(tenants, multipleExecKeys[0])
                 var batchConfirm = multipleTenantsExecutable.find('.confirm').prop('checked')
                 $.multipleTenantsQueryAjax(sql, tenantsMap, multipleExecKeys, ++queryResultId, 0, tenantIdsGroup, 0, 0, Date.now(), batchConfirm)
             }

@@ -112,12 +112,12 @@
                 rowHtml += '<td class="dataCell">' + (dataRowsIndex + i + 1) + '</td>'
                 if (i % 5 == 0) {
                     var rowspan = i < beforeLen ? 5 : splitLen
-                    for (var i = 0; i < multipleExecKeys.length; ++i) {
-                        rowHtml += '<td class="dataCell" rowspan="' + rowspan + '">' + tenant[multipleExecKeys[i]] + '</td>'
+                    for (var k = 0; k < multipleExecKeys.length; ++k) {
+                        rowHtml += '<td class="dataCell" rowspan="' + rowspan + '">' + tenant[multipleExecKeys[k]] + '</td>'
                     }
                 } else {
-                    for (var i = 0; i < multipleExecKeys.length; ++i) {
-                        rowHtml += '<td class="dataCell rowspanned">' + tenant[multipleExecKeys[i]] + '</td>'
+                    for (var l = 0; l < multipleExecKeys.length; ++l) {
+                        rowHtml += '<td class="dataCell rowspanned">' + tenant[multipleExecKeys[l]] + '</td>'
                     }
                 }
 
@@ -134,8 +134,8 @@
         } else {
             rowHtml += '<tr class="dataRow"><td></td>'
             rowHtml += '<td class="dataCell">' + (dataRowsIndex + 1) + '</td>'
-            for (var i = 0; i < multipleExecKeys.length; ++i) {
-                rowHtml += '<td class="dataCell">' + tenant[multipleExecKeys[i]] + '</td>'
+            for (var m = 0; m < multipleExecKeys.length; ++m) {
+                rowHtml += '<td class="dataCell">' + tenant[multipleExecKeys[m]] + '</td>'
             }
             if (result.Error !== "" || result.Msg !== "") {
                 rowHtml += '<td>1</td><td class="dataCell ' + (result.Error !== '' ? 'error' : '') + '" ' +

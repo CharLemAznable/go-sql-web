@@ -2,57 +2,57 @@ package main
 
 import "C"
 import (
-    "strings"
+	"strings"
 )
 
 type SqlTemp interface {
-    SelectDb() string
-    SelectDbByTidResult(row []string) (string, string, string, error)
-    QualifyTable(tableName string) string
-    DescribeTable(tableName string) string
-    DecodeQuerySql(querySql string) string
-    TableColumnsSql(dbName string) string
-    TableCommentSql(dbName string) string
+	SelectDb() string
+	SelectDbByTidResult(row []string) (string, string, string, error)
+	QualifyTable(tableName string) string
+	DescribeTable(tableName string) string
+	DecodeQuerySql(querySql string) string
+	TableColumnsSql(dbName string) string
+	TableCommentSql(dbName string) string
 }
 
 // goracle
 
-type goracleTemp struct {}
+type goracleTemp struct{}
 
 func (t *goracleTemp) parseTableName(tableName string) (string, string) {
-    pos := strings.Index(tableName, ".")
-    if pos >= 0 {
-        return tableName[:pos], tableName[pos+1:]
-    }
-    return "", tableName
+	pos := strings.Index(tableName, ".")
+	if pos >= 0 {
+		return tableName[:pos], tableName[pos+1:]
+	}
+	return "", tableName
 }
 
 func (t *goracleTemp) SelectDb() string {
-    return "SELECT NAME FROM V$DATABASE"
+	return "SELECT NAME FROM V$DATABASE"
 }
 
 func (t *goracleTemp) SelectDbByTidResult(row []string) (string, string, string, error) {
-    // oracle://user:pass@//127.0.0.1:1521/db
-    return "goracle", "oracle://" + row[1] + ":" + row[2] +
-        "@//" + row[3] + ":" + row[4] + "/" +
-        row[5], row[5], nil
+	// oracle://user:pass@//127.0.0.1:1521/db
+	return "goracle", "oracle://" + row[1] + ":" + row[2] +
+		"@//" + row[3] + ":" + row[4] + "/" +
+		row[5], row[5], nil
 }
 
 func (t *goracleTemp) QualifyTable(tableName string) string {
-    owner, objectName := t.parseTableName(tableName)
-    if "" == owner {
-        return `SELECT UPPER(USER||'.` + objectName + `') FROM DUAL`
-    }
-    return `SELECT UPPER('` + tableName + `') FROM DUAL`
+	owner, objectName := t.parseTableName(tableName)
+	if "" == owner {
+		return `SELECT UPPER(USER||'.` + objectName + `') FROM DUAL`
+	}
+	return `SELECT UPPER('` + tableName + `') FROM DUAL`
 }
 
 func (t *goracleTemp) DescribeTable(tableName string) string {
-    owner, objectName := t.parseTableName(tableName)
-    ownerCond := `= UPPER('` + owner + `')`
-    if "" == owner {
-        ownerCond = `= USER`
-    }
-    return `SELECT
+	owner, objectName := t.parseTableName(tableName)
+	ownerCond := `= UPPER('` + owner + `')`
+	if "" == owner {
+		ownerCond = `= USER`
+	}
+	return `SELECT
        T.COLUMN_NAME AS "FIELD"
       ,T.DATA_TYPE||DECODE (T.DATA_TYPE,
                             'NUMBER', DECODE ('('
@@ -118,8 +118,8 @@ func (t *goracleTemp) DescribeTable(tableName string) string {
 }
 
 func (t *goracleTemp) DecodeQuerySql(querySql string) string {
-    if "initTable" == querySql {
-        return `
+	if "initTable" == querySql {
+		return `
 SELECT AO.OWNER||'.'||AO.OBJECT_NAME
   FROM ALL_OBJECTS AO
   LEFT JOIN ALL_USERS AU
@@ -131,29 +131,29 @@ SELECT AO.OWNER||'.'||AO.OBJECT_NAME
  WHERE AU.ORACLE_MAINTAINED = 'N'
    AND AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
  ORDER BY DECODE(AO.OWNER, USER, 1, 2), AO.OWNER, AO.OBJECT_NAME`
-    } else if strings.HasPrefix(querySql, "processShowColumn ") {
-        tableName := querySql[len("processShowColumn "):]
-        return t.DescribeTable(tableName)
-    } else if strings.HasPrefix(querySql, "showCreateTable ") {
-        tableName := querySql[len("showCreateTable "):]
-        owner, objectName := t.parseTableName(tableName)
-        ownerCond := `= UPPER('` + owner + `')`
-        if "" == owner {
-            ownerCond = `= USER`
-        }
-        return `
+	} else if strings.HasPrefix(querySql, "processShowColumn ") {
+		tableName := querySql[len("processShowColumn "):]
+		return t.DescribeTable(tableName)
+	} else if strings.HasPrefix(querySql, "showCreateTable ") {
+		tableName := querySql[len("showCreateTable "):]
+		owner, objectName := t.parseTableName(tableName)
+		ownerCond := `= UPPER('` + owner + `')`
+		if "" == owner {
+			ownerCond = `= USER`
+		}
+		return `
 SELECT AO.OWNER||'.'||AO.OBJECT_NAME
       ,DBMS_METADATA.GET_DDL(AO.OBJECT_TYPE, AO.OBJECT_NAME, AO.OWNER)
   FROM ALL_OBJECTS AO
  WHERE AO.OBJECT_TYPE IN ('TABLE', 'SYNONYM')
    AND UPPER(AO.OWNER) ` + ownerCond + `
    AND UPPER(AO.OBJECT_NAME) = UPPER('` + objectName + `')`
-    }
-    return ""
+	}
+	return ""
 }
 
 func (t *goracleTemp) TableColumnsSql(dbName string) string {
-    return `
+	return `
 SELECT O.FULL_NAME AS "TABLE_NAME"
       ,T.COLUMN_NAME
       ,C.COMMENTS AS "COLUMN_COMMENT"
@@ -218,7 +218,7 @@ SELECT O.FULL_NAME AS "TABLE_NAME"
 }
 
 func (t *goracleTemp) TableCommentSql(dbName string) string {
-    return `
+	return `
 SELECT O.FULL_NAME AS "TABLE_NAME"
       ,T.COMMENTS AS "TABLE_COMMENT"
   FROM ALL_TAB_COMMENTS T
@@ -249,49 +249,49 @@ var goracleInstance = &goracleTemp{}
 
 // mysql
 
-type mysqlTemp struct {}
+type mysqlTemp struct{}
 
 func (t *mysqlTemp) SelectDb() string {
-    return "SELECT DATABASE()"
+	return "SELECT DATABASE()"
 }
 
 func (t *mysqlTemp) SelectDbByTidResult(row []string) (string, string, string, error) {
-    // user:pass@tcp(127.0.0.1:3306)/db?charset=utf8
-    return "mysql", row[1] + ":" + row[2] +
-        "@tcp(" + row[3] + ":" + row[4] + ")/" +
-        row[5] + "?charset=utf8mb4,utf8&timeout=3s", row[5], nil
+	// user:pass@tcp(127.0.0.1:3306)/db?charset=utf8
+	return "mysql", row[1] + ":" + row[2] +
+		"@tcp(" + row[3] + ":" + row[4] + ")/" +
+		row[5] + "?charset=utf8mb4,utf8&timeout=3s", row[5], nil
 }
 
 func (t *mysqlTemp) QualifyTable(tableName string) string {
-    return `SELECT LOWER('` + tableName + `')`
+	return `SELECT LOWER('` + tableName + `')`
 }
 
 func (t *mysqlTemp) DescribeTable(tableName string) string {
-    return "DESC " + tableName
+	return "DESC " + tableName
 }
 
 func (t *mysqlTemp) DecodeQuerySql(querySql string) string {
-    if "initTable" == querySql {
-        return "show tables"
-    } else if strings.HasPrefix(querySql, "processShowColumn ") {
-        tableName := querySql[len("processShowColumn "):]
-        return "show full columns from " + tableName
-    } else if strings.HasPrefix(querySql, "showCreateTable ") {
-        tableName := querySql[len("showCreateTable "):]
-        return "show create table " + tableName
-    }
-    return ""
+	if "initTable" == querySql {
+		return "show tables"
+	} else if strings.HasPrefix(querySql, "processShowColumn ") {
+		tableName := querySql[len("processShowColumn "):]
+		return "show full columns from " + tableName
+	} else if strings.HasPrefix(querySql, "showCreateTable ") {
+		tableName := querySql[len("showCreateTable "):]
+		return "show create table " + tableName
+	}
+	return ""
 }
 
 func (t *mysqlTemp) TableColumnsSql(dbName string) string {
-    return `select TABLE_NAME, COLUMN_NAME, COLUMN_COMMENT, COLUMN_KEY, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+	return `select TABLE_NAME, COLUMN_NAME, COLUMN_COMMENT, COLUMN_KEY, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
             from INFORMATION_SCHEMA.COLUMNS
             where TABLE_SCHEMA = '` + dbName + `' order by TABLE_NAME`
 }
 
 func (t *mysqlTemp) TableCommentSql(dbName string) string {
-    return `select TABLE_NAME, TABLE_COMMENT from INFORMATION_SCHEMA.TABLES ` +
-        `where TABLE_SCHEMA = '` + dbName + `'`
+	return `select TABLE_NAME, TABLE_COMMENT from INFORMATION_SCHEMA.TABLES ` +
+		`where TABLE_SCHEMA = '` + dbName + `'`
 }
 
 var mysqlInstance = &mysqlTemp{}
@@ -299,20 +299,20 @@ var mysqlInstance = &mysqlTemp{}
 // Sql of DriverName
 
 func SqlOf(driverName string) SqlTemp {
-    switch driverName {
-    case "goracle":
-        return goracleInstance
-    case "mysql":
-        return mysqlInstance
-    default:
-        panic("unsupported")
-    }
+	switch driverName {
+	case "goracle":
+		return goracleInstance
+	case "mysql":
+		return mysqlInstance
+	default:
+		panic("unsupported")
+	}
 }
 
 // codec of Sql from Ajax
 
 func IsCodedSql(querySql string) bool {
-    return "initTable" == querySql ||
-        strings.HasPrefix(querySql, "processShowColumn ") ||
-        strings.HasPrefix(querySql, "showCreateTable ")
+	return "initTable" == querySql ||
+		strings.HasPrefix(querySql, "processShowColumn ") ||
+		strings.HasPrefix(querySql, "showCreateTable ")
 }

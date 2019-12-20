@@ -15,6 +15,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.1.1
 	github.com/mattn/go-sqlite3 v1.10.0
+	github.com/mgutz/str v1.2.0
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	gopkg.in/goracle.v2 v2.16.3

@@ -17,18 +17,19 @@ import (
 )
 
 type QueryResult struct {
-	Headers          []string
-	Rows             [][]string
-	TableColumns     map[string][]string
-	Error            string
-	ExecutionTime    string
-	CostTime         string
-	DriverName       string
-	DatabaseName     string
-	TableName        string
-	PrimaryKeysIndex []int
-	Msg              string
-	Tid              string
+	Headers             []string
+	Rows                [][]string
+	TableColumns        map[string][]string
+	Error               string
+	ExecutionTime       string
+	CostTime            string
+	DriverName          string
+	DatabaseName        string
+	TableName           string
+	PrimaryKeysIndex    []int
+	Msg                 string
+	Tid                 string
+	MultipleTenantsExec []string
 }
 
 func serveTablesByColumn(w http.ResponseWriter, req *http.Request) {
@@ -309,16 +310,17 @@ func serveQuery(w http.ResponseWriter, req *http.Request) {
 	primaryKeysIndex := findPrimaryKeysIndex(tableName, primaryKeys, headers)
 
 	queryResult := QueryResult{
-		Headers:          headers,
-		Rows:             rows,
-		Error:            str.Error(err),
-		ExecutionTime:    execTime,
-		CostTime:         costTime,
-		DriverName:       dn,
-		DatabaseName:     dbName,
-		TableName:        tableName,
-		PrimaryKeysIndex: primaryKeysIndex,
-		Msg:              msg,
+		Headers:             headers,
+		Rows:                rows,
+		Error:               str.Error(err),
+		ExecutionTime:       execTime,
+		CostTime:            costTime,
+		DriverName:          dn,
+		DatabaseName:        dbName,
+		TableName:           tableName,
+		PrimaryKeysIndex:    primaryKeysIndex,
+		Msg:                 msg,
+		MultipleTenantsExec: appConfig.MultipleTenantsExecConfig[strings.ToUpper(tableName)],
 	}
 
 	if "true" == withColumns {

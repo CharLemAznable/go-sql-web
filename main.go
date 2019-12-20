@@ -47,7 +47,7 @@ func init() {
 }
 
 func main() {
-	//defer gou.Recover()
+	// defer gou.Recover()
 
 	r := mux.NewRouter()
 	handleFunc(r, "/", serveWelcome, false, true)

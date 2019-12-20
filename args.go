@@ -46,6 +46,15 @@ type AppConfig struct {
 	AmberForceLogin    bool
 
 	WriteAuthUserNames []string // UserNames which has write auth
+
+	SearchDbMerchantByTenantSQL    string
+	SearchDbMerchantNotByTenantSQL string
+	SearchMerchantByTidSQL         string
+	SearchMerchantByTcodeSQL       string
+	SearchMerchantDbByTidSQL       string
+	SearchDbByTidSQL               string
+
+	MultipleTenantsExecConfig map[string][]string
 }
 
 var configFile string
@@ -84,5 +93,38 @@ func init() {
 			amber.WithLocalUrl(appConfig.AmberLocalUrl),
 			amber.WithForceLogin(appConfig.AmberForceLogin),
 		)
+	}
+
+	if 0 == len(appConfig.SearchDbMerchantByTenantSQL) {
+		appConfig.SearchDbMerchantByTenantSQL = "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
+			"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '{{searchKey}}' OR MERCHANT_CODE = '{{searchKey}}'"
+	}
+	if 0 == len(appConfig.SearchDbMerchantNotByTenantSQL) {
+		appConfig.SearchDbMerchantNotByTenantSQL = "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
+			"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '{{searchKey}}' OR MERCHANT_CODE = '{{searchKey}}' " +
+			"OR MERCHANT_NAME LIKE '%{{searchKey}}%'"
+	}
+	if 0 == len(appConfig.SearchMerchantByTidSQL) {
+		appConfig.SearchMerchantByTidSQL = "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
+			"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '{{tid}}'"
+	}
+	if 0 == len(appConfig.SearchMerchantByTcodeSQL) {
+		appConfig.SearchMerchantByTcodeSQL = "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
+			"FROM TR_F_MERCHANT WHERE MERCHANT_CODE = '{{tcode}}'"
+	}
+	if 0 == len(appConfig.SearchMerchantDbByTidSQL) {
+		appConfig.SearchMerchantDbByTidSQL = "SELECT MERCHANT_ID, DB_USERNAME, DB_PASSWORD, PROXY_IP, PROXY_PORT, DB_NAME " +
+			"FROM TR_F_DB WHERE MERCHANT_ID = '{{tid}}'"
+	}
+	if 0 == len(appConfig.SearchDbByTidSQL) {
+		appConfig.SearchDbByTidSQL = "SELECT DB_USERNAME, DB_PASSWORD, PROXY_IP, PROXY_PORT, DB_NAME " +
+			"FROM TR_F_DB WHERE MERCHANT_ID = '{{tid}}'"
+	}
+
+	if 0 == len(appConfig.MultipleTenantsExecConfig) {
+		appConfig.MultipleTenantsExecConfig = map[string][]string{
+			"TR_F_MERCHANT": {"MERCHANT_ID", "MERCHANT_NAME", "MERCHANT_CODE"},
+			"TR_F_DB":       {"MERCHANT_ID", "DB_NAME", "DB_USERNAME"},
+		}
 	}
 }

@@ -1,5 +1,5 @@
 (function () {
-    $.multipleTenantsQueryAjax = function (sql, tenantsMap, resultId, groupIndex, tenantIdsGroup, headerColumnsLen, dataRowsIndex, startTime, batchConfirm) {
+    $.multipleTenantsQueryAjax = function (sql, tenantsMap, multipleExecKeys, resultId, groupIndex, tenantIdsGroup, headerColumnsLen, dataRowsIndex, startTime, batchConfirm) {
         if (groupIndex >= tenantIdsGroup.length || (groupIndex > 0 && batchConfirm && !window.confirm('Continue?'))) {
             $('#queryResult' + resultId + ' tbody tr:odd').addClass('rowOdd').attr('rowOdd', true)
             $.attachSearchTableEvent(resultId)
@@ -32,20 +32,20 @@
                 var headerHolder = {}
                 var resortedContent = sortContent(content, currentGroup, headerHolder, groupIndex)
                 if (groupIndex == 0) {
-                    tableCreateSimpleHead(headerHolder.Headers, sql, resultId)
+                    tableCreateSimpleHead(multipleExecKeys, headerHolder.Headers, sql, resultId)
                     headerColumnsLen = headerHolder.Headers ? headerHolder.Headers.length : 1
                 }
 
                 var rows = ''
                 for (var i = 0; i < resortedContent.length; ++i) {
-                    rows += createRowsSimple(tenantsMap, resortedContent[i], headerColumnsLen, dataRowsIndex)
+                    rows += createRowsSimple(tenantsMap, multipleExecKeys, resortedContent[i], headerColumnsLen, dataRowsIndex)
                     dataRowsIndex += resortedContent[i].Rows && resortedContent[i].Rows.length ? resortedContent[i].Rows.length : 1
                 }
 
                 $('#queryResult' + resultId + " tbody").append(rows)
 
                 setTimeout(function () { // Leave time for rendering, and then continue to next batch.
-                    $.multipleTenantsQueryAjax(sql, tenantsMap, resultId, groupIndex + 1, tenantIdsGroup, headerColumnsLen, dataRowsIndex, startTime, batchConfirm)
+                    $.multipleTenantsQueryAjax(sql, tenantsMap, multipleExecKeys, resultId, groupIndex + 1, tenantIdsGroup, headerColumnsLen, dataRowsIndex, startTime, batchConfirm)
                 }, 100)
             },
             error: function (jqXHR, textStatus, errorThrown) {
@@ -54,7 +54,7 @@
         })
     }
 
-    var tableCreateSimpleHeadHtml = function (headers, sql, resultId) {
+    var tableCreateSimpleHeadHtml = function (multipleExecKeys, headers, sql, resultId) {
         var seqNum = $.convertSeqNum(resultId)
         var table = '<div class="executionResult" id="executionResultDiv' + resultId + '">' +
             '<table class="executionSummary"><tr>' +
@@ -79,9 +79,11 @@
 
         table += '<table id="queryResult' + resultId + `" class="queryResult">`
         table += '<thead><tr class="headRow"><td></td>'
-        table += '<td class="headCell">#</td><td class="headCell">MERCHANT_ID</td>' +
-            '<td class="headCell">MERCHANT_NAME</td>' +
-            '<td class="headCell">MERCHANT_CODE</td><td class="headCell">##</td>'
+        table += '<td class="headCell">#</td>'
+        for (var i = 0; i < multipleExecKeys.length; ++i) {
+            table += '<td class="headCell">' + multipleExecKeys[i] + '</td>'
+        }
+        table += '<td class="headCell">##</td>'
 
         if (headers && headers.length) {
             for (var j = 0; j < headers.length; ++j) {
@@ -97,7 +99,7 @@
         return table
     }
 
-    var createRowsSimple = function (tenantsMap, result, headerColumnsLen, dataRowsIndex) {
+    var createRowsSimple = function (tenantsMap, multipleExecKeys, result, headerColumnsLen, dataRowsIndex) {
         var rowHtml = ''
         var tenant = tenantsMap[result.Tid]
 
@@ -110,15 +112,13 @@
                 rowHtml += '<td class="dataCell">' + (dataRowsIndex + i + 1) + '</td>'
                 if (i % 5 == 0) {
                     var rowspan = i < beforeLen ? 5 : splitLen
-                    rowHtml +=
-                        '<td class="dataCell" rowspan="' + rowspan + '">' + tenant.merchantId + '</td>' +
-                        '<td class="dataCell" rowspan="' + rowspan + '">' + tenant.merchantName + '</td>' +
-                        '<td class="dataCell" rowspan="' + rowspan + '">' + tenant.merchantCode + '</td>'
+                    for (var i = 0; i < multipleExecKeys.length; ++i) {
+                        rowHtml += '<td class="dataCell" rowspan="' + rowspan + '">' + tenant[multipleExecKeys[i]] + '</td>'
+                    }
                 } else {
-                    rowHtml +=
-                        '<td class="dataCell rowspanned">' + tenant.merchantId + '</td>' +
-                        '<td class="dataCell rowspanned">' + tenant.merchantName + '</td>' +
-                        '<td class="dataCell rowspanned">' + tenant.merchantCode + '</td>'
+                    for (var i = 0; i < multipleExecKeys.length; ++i) {
+                        rowHtml += '<td class="dataCell rowspanned">' + tenant[multipleExecKeys[i]] + '</td>'
+                    }
                 }
 
                 rowHtml += '<td>' + (i + 1) + '</td>'
@@ -133,10 +133,10 @@
             }
         } else {
             rowHtml += '<tr class="dataRow"><td></td>'
-            rowHtml += '<td class="dataCell">' + (dataRowsIndex + 1) + '</td>' +
-                '<td class="dataCell">' + tenant.merchantId + '</td>' +
-                '<td class="dataCell">' + tenant.merchantName + '</td>' +
-                '<td class="dataCell">' + tenant.merchantCode + '</td>'
+            rowHtml += '<td class="dataCell">' + (dataRowsIndex + 1) + '</td>'
+            for (var i = 0; i < multipleExecKeys.length; ++i) {
+                rowHtml += '<td class="dataCell">' + tenant[multipleExecKeys[i]] + '</td>'
+            }
             if (result.Error !== "" || result.Msg !== "") {
                 rowHtml += '<td>1</td><td class="dataCell ' + (result.Error !== '' ? 'error' : '') + '" ' +
                     'colspan="' + (headerColumnsLen + 1) + '">' + (result.Error || result.Msg) + '</td>'
@@ -150,23 +150,23 @@
     }
 
 
-    var tableCreateSimpleHead = function (headers, sql, queryResultId) {
-        var table = tableCreateSimpleHeadHtml(headers, sql, queryResultId)
+    var tableCreateSimpleHead = function (multipleExecKeys, headers, sql, queryResultId) {
+        var table = tableCreateSimpleHeadHtml(multipleExecKeys, headers, sql, queryResultId)
         $(table).prependTo($('.result'))
     }
 
-
-    $.findTenants = function (resultId, merchantIdIndex, merchantNameIndex, merchantCodeIndex) {
+    $.findTenants = function (resultId, multipleExecKeys, multipleExecIndexes) {
         var chosenRows = $.chosenRowsHighlightedOrAll(resultId)
 
         var offset = 2
         var tenants = []
         chosenRows.each(function (index, tr) {
             var tds = $(tr).find('td');
-            var item = {
-                merchantId: tds.eq(merchantIdIndex + offset).text(),
-                merchantName: tds.eq(merchantNameIndex + offset).text(),
-                merchantCode: tds.eq(merchantCodeIndex + offset).text()
+            var item = {}
+            for (var i = 0; i < multipleExecKeys.length; ++i) {
+                var key = multipleExecKeys[i]
+                var keyIndex = parseInt(multipleExecIndexes[i])
+                item[key] = tds.eq(keyIndex + offset).text()
             }
 
             tenants.push(item)

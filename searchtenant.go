@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/bingoohuang/gonet"
+	"github.com/mgutz/str"
 	"net/http"
 	"strconv"
 	"strings"
@@ -38,14 +39,12 @@ func serveSearchDb(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	values := map[string]interface{}{"searchKey": searchKey}
 	searchSql := ""
 	if byTenant == "true" {
-		searchSql = "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
-			"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '" + searchKey + "' OR MERCHANT_CODE = '" + searchKey + "'"
+		searchSql = str.Template(appConfig.SearchDbMerchantByTenantSQL, values)
 	} else {
-		searchSql = "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
-			"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '" + searchKey +
-			"' OR MERCHANT_CODE = '" + searchKey + "' OR MERCHANT_NAME LIKE '%" + searchKey + "%'"
+		searchSql = str.Template(appConfig.SearchDbMerchantNotByTenantSQL, values)
 	}
 	_, data, _, _, err, _ := executeQuery(searchSql, appConfig.DriverName, appConfig.DataSource, 0)
 	if err != nil {
@@ -81,8 +80,7 @@ type MerchantDb struct {
 }
 
 func searchMerchantDb(tid string, dn, ds string) (*MerchantDb, error) {
-	sql := "SELECT MERCHANT_ID, DB_USERNAME, DB_PASSWORD, PROXY_IP, PROXY_PORT, DB_NAME " +
-		"FROM TR_F_DB WHERE MERCHANT_ID = '" + tid + "'"
+	sql := str.Template(appConfig.SearchMerchantDbByTidSQL, map[string]interface{}{"tid": tid})
 
 	_, data, _, _, err, _ := executeQuery(sql, dn, ds, 1)
 	if err != nil {
@@ -102,15 +100,13 @@ func searchMerchant(tid string) (*Merchant, error) {
 		return &Merchant{MerchantName: tid, MerchantId: tid, MerchantCode: tid, HomeArea: appConfig.TrrHomeArea, Classifier: tid}, nil
 	}
 
-	sql := "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
-		"FROM TR_F_MERCHANT WHERE MERCHANT_ID = '" + tid + "'"
+	sql := str.Template(appConfig.SearchMerchantByTidSQL, map[string]interface{}{"tid": tid})
 
 	return searchMerchantBySql(sql, 1)
 }
 
 func searchMerchantByTcode(tcode string) (*Merchant, error) {
-	sql := "SELECT MERCHANT_NAME, MERCHANT_ID, MERCHANT_CODE, HOME_AREA, CLASSIFIER " +
-		"FROM TR_F_MERCHANT WHERE MERCHANT_CODE = '" + tcode + "'"
+	sql := str.Template(appConfig.SearchMerchantByTcodeSQL, map[string]interface{}{"tcode": tcode})
 
 	return searchMerchantBySql(sql, 1)
 }

@@ -75,6 +75,7 @@ func init() {
         appConfig.ContextPath = "/" + appConfig.ContextPath
     }
 
+    htt.PrepareMustAuthFlag(&authParam)
     authParam = htt.MustAuthParam{
         EncryptKey:  appConfig.EncryptKey,
         CookieName:  appConfig.CookieName,
@@ -82,7 +83,6 @@ func init() {
         LocalURL:    appConfig.LocalUrl,
         ForceLogin:  appConfig.ForceLogin,
     }
-    htt.PrepareMustAuthFlag(&authParam)
 
     if appConfig.AmberLoginEnabled {
         amber.ConfigInstance = amber.NewConfig(

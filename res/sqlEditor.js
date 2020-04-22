@@ -2,10 +2,14 @@
     var mac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault // 判断是否为Mac
 
     var runKey = (mac ? "Cmd" : "Ctrl") + "-Enter"
+    var saveKey = (mac ? "Cmd" : "Ctrl") + "-S"
     var extraKeys = {}
     extraKeys[runKey] = function (cm) {
         var executeQuery = $('.executeQuery')
         if (!executeQuery.prop("disabled")) executeQuery.click()
+    }
+    extraKeys[saveKey] = function (cm) {
+        window.localStorage.setItem(window.location.host, codeMirror.getValue())
     }
 
     var codeMirror = CodeMirror.fromTextArea(document.getElementById('code'), {
@@ -19,6 +23,7 @@
     })
 
     $.sqlCodeMirror = codeMirror
+    codeMirror.setValue(window.localStorage.getItem(window.location.host) || "")
 
     $.getEditorText = function () {
         var selected = codeMirror.somethingSelected()
@@ -39,7 +44,7 @@
                     codeMirror.setValue(formattedSql)
                 }
             } else if (key === 'ClearSql') {
-                codeMirror.setValue('')
+                $('.clearSQL').click()
             } else if (key === 'RunSql') {
                 const $executeQuery = $('.executeQuery');
                 if ($executeQuery.prop('disabled') === false) {
@@ -76,6 +81,7 @@
     }
 
     $('.executeQuery').prop("disabled", true).click(function () {
+        window.localStorage.setItem(window.location.host, codeMirror.getValue())
         var sql = $.getEditorSql()
         if ($.trim(sql) === '') {
             $.alertMe("Please input sql!")
@@ -83,5 +89,10 @@
         }
 
         $.executeMultiSqlsAjax(sql)
+    })
+
+    $('.clearSQL').click(function () {
+        codeMirror.setValue('')
+        window.localStorage.setItem(window.location.host, codeMirror.getValue())
     })
 })()

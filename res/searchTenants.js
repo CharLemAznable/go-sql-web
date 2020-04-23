@@ -28,7 +28,10 @@
                 var searchHtml = ''
                 const hasContent = content && content.length;
                 if (hasContent) {
-                    searchHtml += !byTenant ? `<option value="trr|trr|south-center|trr|trr|trr|trr">trr</option>` : ``;
+                    let initDataId = window.localStorage.getItem(tenantStorageKey) || "trr|trr|south-center|trr|trr|trr|trr"
+                    let initDataArr = initDataId.split('|')
+                    let initTcode = initDataArr.length === 7 ? initDataArr[1] : defaultTenant
+                    searchHtml += !byTenant ? `<option value="trr|trr|south-center|trr|trr|trr|trr" ${initTcode === 'trr' ? 'selected="selected"' : ''}>trr</option>` : ``;
                     for (var j = 0; j < content.length; j++) {
                         const {MerchantId, MerchantCode, HomeArea, Classifier, MerchantName} = content[j]
                         // activeMerchantId|activeMerchantCode|activeHomeArea|activeClassifier|activeMerchantName|activeMerchantNamePinyin|activeMerchantNameSimplePinyin
@@ -38,7 +41,7 @@
                         + '|' + Classifier
                         + '|' + MerchantName
                         + '|' + $.toPinyin(MerchantName)
-                        + '|' + $.simplePinyin(MerchantName)}" ${defaultTenant === MerchantCode ? 'selected="selected"' : ''}>${MerchantName}</option>`
+                        + '|' + $.simplePinyin(MerchantName)}" ${initTcode === MerchantCode ? 'selected="selected"' : ''}>${MerchantName}</option>`
                     }
 
                     $('.searchResult')
@@ -59,8 +62,7 @@
 
                 searchResult.html(searchHtml)
                 if (content.length > 0) {
-                    let initDataId = window.localStorage.getItem(tenantStorageKey) || $('.searchResult').select2('data')[0].id
-                    selectDB(initDataId)
+                    selectDB($('.searchResult').select2('data')[0].id)
                     // const {MerchantId, MerchantCode, HomeArea, Classifier, MerchantName} = content[0]
                     // selectDB(`${MerchantId + '|' + MerchantCode + '|' + HomeArea + '|' + Classifier + '|' + MerchantName}`)
                 }

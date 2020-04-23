@@ -1,5 +1,6 @@
 (function () {
     var mac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault // 判断是否为Mac
+    let sqlStorageKey = window.location.host + "/sql-edit"
 
     var runKey = (mac ? "Cmd" : "Ctrl") + "-Enter"
     var saveKey = (mac ? "Cmd" : "Ctrl") + "-S"
@@ -9,7 +10,7 @@
         if (!executeQuery.prop("disabled")) executeQuery.click()
     }
     extraKeys[saveKey] = function (cm) {
-        window.localStorage.setItem(window.location.host, codeMirror.getValue())
+        window.localStorage.setItem(sqlStorageKey, codeMirror.getValue())
     }
 
     var codeMirror = CodeMirror.fromTextArea(document.getElementById('code'), {
@@ -23,7 +24,7 @@
     })
 
     $.sqlCodeMirror = codeMirror
-    codeMirror.setValue(window.localStorage.getItem(window.location.host) || "")
+    codeMirror.setValue(window.localStorage.getItem(sqlStorageKey) || "")
 
     $.getEditorText = function () {
         var selected = codeMirror.somethingSelected()
@@ -81,7 +82,7 @@
     }
 
     $('.executeQuery').prop("disabled", true).click(function () {
-        window.localStorage.setItem(window.location.host, codeMirror.getValue())
+        window.localStorage.setItem(sqlStorageKey, codeMirror.getValue())
         var sql = $.getEditorSql()
         if ($.trim(sql) === '') {
             $.alertMe("Please input sql!")
@@ -93,6 +94,6 @@
 
     $('.clearSQL').click(function () {
         codeMirror.setValue('')
-        window.localStorage.setItem(window.location.host, codeMirror.getValue())
+        window.localStorage.setItem(sqlStorageKey, codeMirror.getValue())
     })
 })()

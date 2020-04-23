@@ -17,6 +17,7 @@
         $(this).select()
     })
 
+    let tenantStorageKey = window.location.host + "/db-tenant"
     $.searchTenants = function (searchKey, callbackFn, byTenant) {
         $.ajax({
             type: 'POST',
@@ -43,7 +44,9 @@
                     $('.searchResult')
                         .select2({matcher: matcherCustom})
                         .on('select2:select', function (e) {
-                            selectDB(e.params.data.id)
+                            let dataId = e.params.data.id
+                            window.localStorage.setItem(tenantStorageKey, dataId)
+                            selectDB(dataId)
                         })
                         .on('select2:open', function (e) {
                             $('.select2-search__field').attr('placeholder', 'tid|tcode|名称|缩写|全拼|HomeArea')
@@ -56,7 +59,8 @@
 
                 searchResult.html(searchHtml)
                 if (content.length > 0) {
-                    selectDB($('.searchResult').select2('data')[0].id)
+                    let initDataId = window.localStorage.getItem(tenantStorageKey) || $('.searchResult').select2('data')[0].id
+                    selectDB(initDataId)
                     // const {MerchantId, MerchantCode, HomeArea, Classifier, MerchantName} = content[0]
                     // selectDB(`${MerchantId + '|' + MerchantCode + '|' + HomeArea + '|' + Classifier + '|' + MerchantName}`)
                 }

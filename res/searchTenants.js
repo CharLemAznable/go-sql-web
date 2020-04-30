@@ -30,8 +30,8 @@
                 if (hasContent) {
                     let initDataId = window.localStorage.getItem(tenantStorageKey) || "trr|trr|south-center|trr|trr|trr|trr"
                     let initDataArr = initDataId.split('|')
-                    let initTcode = initDataArr.length === 7 ? initDataArr[1] : defaultTenant
-                    searchHtml += !byTenant ? `<option value="trr|trr|south-center|trr|trr|trr|trr" ${initTcode === 'trr' ? 'selected="selected"' : ''}>trr</option>` : ``;
+                    let initTid = initDataArr.length === 7 ? initDataArr[0] : defaultTenant
+                    searchHtml += !byTenant ? `<option value="trr|trr|south-center|trr|trr|trr|trr" ${initTid === 'trr' ? 'selected="selected"' : ''}>trr</option>` : ``;
                     for (var j = 0; j < content.length; j++) {
                         const {MerchantId, MerchantCode, HomeArea, Classifier, MerchantName} = content[j]
                         // activeMerchantId|activeMerchantCode|activeHomeArea|activeClassifier|activeMerchantName|activeMerchantNamePinyin|activeMerchantNameSimplePinyin
@@ -41,7 +41,7 @@
                         + '|' + Classifier
                         + '|' + MerchantName
                         + '|' + $.toPinyin(MerchantName)
-                        + '|' + $.simplePinyin(MerchantName)}" ${initTcode === MerchantCode ? 'selected="selected"' : ''}>${MerchantName}</option>`
+                        + '|' + $.simplePinyin(MerchantName)}" ${initTid === MerchantId ? 'selected="selected"' : ''}>${MerchantName}</option>`
                     }
 
                     $('.searchResult')

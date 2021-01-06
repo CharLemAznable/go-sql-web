@@ -296,6 +296,105 @@ func (t *mysqlTemp) TableCommentSql(dbName string) string {
 
 var mysqlInstance = &mysqlTemp{}
 
+// mssql
+
+type mssqlTemp struct {}
+
+func (t *mssqlTemp) SelectDb() string {
+    return "SELECT NAME FROM SYSDATABASES"
+}
+
+func (t *mssqlTemp) SelectDbByTidResult(row []string) (string, string, string, error) {
+    // sqlserver://user:pass@host:port/instance
+    return "mssql", "sqlserver://" + row[1] + ":" + row[2] +
+        "@" + row[3] + ":" + row[4] +
+        "?database=" + row[5] + "&connection+timeout=30", row[5], nil
+}
+
+func (t *mssqlTemp) QualifyTable(tableName string) string {
+    return "\"" + tableName + "\""
+}
+
+func (t *mssqlTemp) DescribeTable(tableName string) string {
+    return `
+SELECT COLUMN_NAME
+      ,TABLE_NAME
+      ,'' AS "TYPE"
+      ,'PRI' AS "KEY"
+  FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+ WHERE TABLE_NAME = '` + tableName + `'`
+}
+
+func (t *mssqlTemp) DecodeQuerySql(querySql string) string {
+    if "initTable" == querySql {
+        return "SELECT NAME FROM SYS.TABLES ORDER BY NAME"
+    } else if strings.HasPrefix(querySql, "processShowColumn ") {
+        tableName := querySql[len("processShowColumn "):]
+        return "SELECT * FROM SYSCOLUMNS WHERE ID = OBJECT_ID('" + tableName + "')"
+    } else if strings.HasPrefix(querySql, "showCreateTable ") {
+        tableName := querySql[len("showCreateTable "):]
+        return "SELECT '" + tableName + "', '-- Show Create Table Not Supported'" // TODO
+    }
+    return ""
+}
+
+func (t *mssqlTemp) TableColumnsSql(dbName string) string {
+    return `
+SELECT OBJECT_NAME(A.ID)               AS "TABLE_NAME"
+      ,A.NAME                          AS "COLUMN_NAME"
+      ,ISNULL(G.[VALUE], '')           AS "COLUMN_COMMENT"
+      ,CASE
+       WHEN EXISTS(SELECT 1 FROM SYSOBJECTS WHERE XTYPE = 'PK' AND PARENT_OBJ = A.ID AND NAME IN (
+                   SELECT NAME FROM SYSINDEXES WHERE INDID IN (
+                   SELECT INDID FROM SYSINDEXKEYS WHERE ID = A.ID AND COLID = A.COLID))) THEN 'PRI'
+       ELSE '' END                     AS "COLUMN_KEY"
+      ,B.NAME                          AS "COLUMN_TYPE"
+      ,CASE 
+       WHEN A.ISNULLABLE = 1 THEN 'YES'
+       ELSE 'NO' END                   AS "IS_NULLABLE"
+      ,ISNULL(E.TEXT, '')              AS "COLUMN_DEFAULT"
+  FROM SYSCOLUMNS                      A
+  LEFT JOIN SYSTYPES                   B
+    ON A.XUSERTYPE                     = B.XUSERTYPE
+ INNER JOIN SYSOBJECTS                 D
+    ON A.ID                            = D.ID
+   AND D.XTYPE                         = 'U'
+   AND D.NAME                          <> 'DTPROPERTIES'
+  LEFT JOIN SYSCOMMENTS                E
+    ON A.CDEFAULT                      = E.ID
+  LEFT JOIN SYS.EXTENDED_PROPERTIES    G 
+    ON A.ID                            = G.MAJOR_ID
+   AND A.COLID                         = G.MINOR_ID  
+  LEFT JOIN SYS.EXTENDED_PROPERTIES    F
+    ON D.ID                            = F.MAJOR_ID
+   AND F.MINOR_ID                      = 0
+ ORDER BY D.NAME`
+}
+
+func (t *mssqlTemp) TableCommentSql(dbName string) string {
+    return `
+SELECT DISTINCT
+       D.NAME                       AS "TABLE_NAME"
+      ,ISNULL(F.VALUE, '')          AS "TABLE_COMMENT"
+  FROM SYSCOLUMNS                   A
+  LEFT JOIN SYSTYPES                B
+    ON A.XUSERTYPE                  = B.XUSERTYPE
+ INNER JOIN SYSOBJECTS              D
+    ON A.ID                         = D.ID 
+   AND D.XTYPE                      = 'U'
+   AND D.NAME                       <> 'DTPROPERTIES'
+  LEFT JOIN SYSCOMMENTS             E
+    ON A.CDEFAULT                   = E.ID
+  LEFT JOIN SYS.EXTENDED_PROPERTIES G
+    ON A.ID                         = G.MAJOR_ID
+   AND A.COLID                      = G.MINOR_ID
+  LEFT JOIN SYS.EXTENDED_PROPERTIES F
+    ON D.ID                         = F.MAJOR_ID 
+   AND F.MINOR_ID                   = 0`
+}
+
+var mssqlInstance = &mssqlTemp{}
+
 // Sql of DriverName
 
 func SqlOf(driverName string) SqlTemp {
@@ -304,6 +403,8 @@ func SqlOf(driverName string) SqlTemp {
         return goracleInstance
     case "mysql":
         return mysqlInstance
+    case "mssql":
+        return mssqlInstance
     default:
         panic("unsupported")
     }
